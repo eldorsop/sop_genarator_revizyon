@@ -418,7 +418,7 @@
         </div>
     </div>
 
-    <!-- Main App Container -->
+    <!-- Main Container (Sidebar & Editor) -->
     <div class="app-container hidden opacity-0 transition-opacity duration-700" id="mainApp">
         <aside id="sidebar" class="sidebar shadow-2xl">
             <div class="p-8 border-b flex flex-col gap-6 bg-slate-50/50">
@@ -444,7 +444,6 @@
                 <button id="startNewSopBtn" class="hidden px-10 py-5 bg-[#000080] text-white rounded-2xl font-black shadow-2xl hover:scale-105 transition-all uppercase text-xs tracking-widest">ADD NEW INSTRUCTION</button>
             </div>
 
-            <!-- EDITOR PANEL -->
             <div id="sopEditor" class="hidden max-w-6xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                 <div class="flex flex-col lg:flex-row items-center gap-8 bg-white p-8 rounded-[32px] shadow-sm border border-slate-200">
                     <div id="logoUploadBox" class="w-24 h-24 shrink-0 border-2 border-dashed border-slate-200 rounded-[20px] flex items-center justify-center cursor-pointer bg-slate-50 relative hover:bg-slate-100 transition-colors group">
@@ -466,7 +465,6 @@
                     <div class="xl:col-span-2 space-y-8">
                         <div class="bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm">
                             <div class="flex border-b border-slate-100 mb-8 gap-10">
-                                <!-- DYNAMIC TABS CONTAINER -->
                                 <div id="tabsContainer" class="flex gap-4 overflow-x-auto custom-scrollbar"></div>
                             </div>
                             <div id="uploadArea" class="bg-slate-50 py-32 rounded-3xl border-2 border-dashed border-slate-200 text-center cursor-pointer hover:bg-slate-100 transition-all">
@@ -539,16 +537,6 @@
     <div id="loading" class="loading-overlay">
         <div class="w-16 h-16 border-4 border-[#000080] border-t-transparent rounded-full animate-spin mb-6"></div>
         <p class="font-black text-[#000080] text-lg uppercase tracking-tighter" id="loadingText">Loading...</p>
-    </div>
-
-    <!-- QR Modal -->
-    <div id="qrModal" class="fixed inset-0 bg-black/70 z-[9995] hidden items-center justify-center p-4 backdrop-blur-md">
-        <div class="bg-white rounded-3xl max-sm w-full p-6 shadow-2xl text-center relative">
-            <h3 class="text-lg font-bold mb-4" id="qrModalTitle">SOP Information</h3>
-            <div id="qrcode" class="bg-white p-2 rounded-2xl border border-slate-100 inline-block mb-4"></div>
-            <p class="text-slate-400 text-xs mb-4 uppercase font-bold tracking-widest">Access Options QR</p>
-            <button onclick="get('qrModal').classList.add('hidden'); get('qrModal').classList.remove('flex');" class="w-full py-3 bg-slate-200 text-slate-700 rounded-xl font-bold uppercase text-xs">Close</button>
-        </div>
     </div>
 
     <script>
@@ -703,7 +691,6 @@
             });
         }
 
-        // --- NEW: DYNAMIC TABS RENDERER ---
         function renderTabs() {
             const container = get('tabsContainer');
             if(!container) return;
@@ -728,9 +715,8 @@
                 get('newProjectNameInput').value = "";
                 get('newProjectUserInput').value = "";
                 get('newProjectPassInput').value = "";
-                const modal = get('newProjectModal');
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+                get('newProjectModal').classList.remove('hidden');
+                get('newProjectModal').classList.add('flex');
                 lucide.createIcons();
             };
 
@@ -757,9 +743,8 @@
                 let target = "System General";
                 if (pendingPath) { const parts = pendingPath.split('/'); target = (parts.length > 2) ? parts[2] : "System General"; }
                 get('targetProjectName').innerText = target;
-                const modal = get('emailAuthModal');
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+                get('emailAuthModal').classList.remove('hidden');
+                get('emailAuthModal').classList.add('flex');
             };
 
             get('sendEmailBtn').onclick = handleSendAuthEmail;
@@ -824,7 +809,7 @@
             get('addWarningBtn').onclick = () => { warnings.push({ text: '' }); renderWarnings(); };
         }
 
-        function loginSuccess(role, project) { currentUser = { role, project }; if (role === 'admin') localStorage.setItem('isEldor') === 'true'; get('loginScreen').style.display = 'none'; get('gatewayScreen').style.display = 'none'; const m = get('mainApp'); m.classList.remove('hidden'); setTimeout(() => m.style.opacity = '1', 50); if (role === 'admin') get('addNewProjectBtn').classList.remove('hidden'); if (role === 'project') selectProject(project); fetchArchive(); }
+        function loginSuccess(role, project) { currentUser = { role, project }; if (role === 'admin') localStorage.setItem('isEldor', 'true'); get('loginScreen').style.display = 'none'; get('gatewayScreen').style.display = 'none'; const m = get('mainApp'); m.classList.remove('hidden'); setTimeout(() => m.style.opacity = '1', 50); if (role === 'admin') get('addNewProjectBtn').classList.remove('hidden'); if (role === 'project') selectProject(project); fetchArchive(); }
         function logout() { localStorage.removeItem('isEldor'); window.location.reload(); }
         function showModeSelection(path) { pendingPath = path; get('modeSelectionScreen').style.display = 'flex'; }
         function handleModeChoice(mode) { get('modeSelectionScreen').style.display = 'none'; if (mode === 'operator') loadOperatorSop(pendingPath); else { loginPurpose = 'engineer_edit'; get('loginHeading').innerText = "Engineer Access"; get('loginError').classList.add('hidden'); get('backToGateway').classList.remove('hidden'); get('loginScreen').style.display = 'flex'; } }
@@ -859,8 +844,6 @@
                             if (f.name.startsWith('SOP_')) { const pts = f.name.split('_'); if (pts.length > 2) cleanName = pts.slice(2).join(' ').replace('.json', ''); }
                             const div = document.createElement('div');
                             div.className = "p-3 hover:bg-slate-100 rounded-xl cursor-pointer text-[11px] font-bold flex items-center justify-between ml-3 mt-2 border border-transparent";
-                            
-                            // EYE ICON RESTORED
                             div.innerHTML = `
                                 <span onclick="event.stopPropagation(); loadSopData('${path}')" class="truncate flex-grow mr-2 uppercase tracking-tight">${cleanName}</span>
                                 <div class="flex gap-2 items-center">
@@ -906,7 +889,9 @@
                 get('opSopTitle').innerText = s.title; get('opSopSubtitle').innerText = s.subtitle;
                 const m = get('opMedia'); m.innerHTML = ''; const st = get('opStepsList'); st.innerHTML = '';
                 if(s.logo) get('opLogoContainer').innerHTML = `<img src="${s.logo}" class="w-full h-full object-contain">`;
-                s.images.forEach((src, idx) => {
+                
+                const sImages = s.images || [];
+                sImages.forEach((src, idx) => {
                     if(!src) return;
                     const div = document.createElement('div'); div.className = "relative bg-white rounded-[32px] overflow-hidden shadow-md border border-slate-200 mb-8";
                     const img = document.createElement('img'); img.src = src; img.className = "w-full"; div.appendChild(img);
@@ -948,14 +933,16 @@
                 selectProject(s.subtitle);
                 if(s.logo) { const p = get('logoPreview'); p.src = s.logo; p.classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }
                 
-                // Load multiple images dynamically
-                images = s.images || [null];
-                for(let i=0; i<images.length; i++) {
-                    if(images[i]) {
+                const sImages = s.images || [null];
+                images = [];
+                for(let i=0; i<sImages.length; i++) {
+                    if(sImages[i]) {
                         const img = new Image();
-                        img.src = images[i];
+                        img.src = sImages[i];
                         await new Promise(r => img.onload = r);
-                        images[i] = img;
+                        images.push(img);
+                    } else {
+                        images.push(null);
                     }
                 }
                 
@@ -970,7 +957,7 @@
         function handleCanvasClick(e) { if(!images[activeIdx]) return; const rect = get('mainCanvas').getBoundingClientRect(); const x = ((e.clientX - rect.left) / rect.width) * 100, y = ((e.clientY - rect.top) / rect.height) * 100; if (currentMode === 'arrow') { if (!tempArrowStart) tempArrowStart = { x, y }; else { arrows.push({ x1: tempArrowStart.x, y1: tempArrowStart.y, x2: x, y2: y, color: getHexColor(lastColor), imgIdx: activeIdx }); tempArrowStart = null; renderAll(); } } else { points.push({ px: x, py: y, type: currentMode, description: '', imgIdx: activeIdx, isManual: false }); renderAll(); } }
         
         function renderAll() {
-            renderTabs(); // Redraw dynamic tabs
+            renderTabs();
             const img = images[activeIdx]; const canvas = get('mainCanvas');
             if (img && ctx) { get('uploadArea').classList.add('hidden'); get('editorArea').classList.remove('hidden'); canvas.width = 1200; canvas.height = img.height * (1200 / img.width); ctx.drawImage(img, 0, 0, 1200, canvas.height); arrows.filter(a => a.imgIdx === activeIdx).forEach(a => drawArrow(ctx, (a.x1/100)*1200, (a.y1/100)*canvas.height, (a.x2/100)*1200, (a.y2/100)*canvas.height, a.color)); } else { get('uploadArea').classList.remove('hidden'); get('editorArea').classList.add('hidden'); }
             const overlay = get('markersOverlay'); overlay.innerHTML = ''; const table = get('tableBody'); table.innerHTML = '';
@@ -978,39 +965,30 @@
             points.forEach((p, i) => { 
                 const isStep = p.type === 'red' || p.isManual;
                 if(isStep) sc++; 
-                
                 if (p.imgIdx === activeIdx && !p.isManual) { 
                     const m = document.createElement('div'); 
                     m.className = p.type === 'operator' ? 'marker-operator' : `marker marker-${p.type}`; 
                     m.style.left = p.px + '%'; m.style.top = p.py + '%'; 
                     m.innerHTML = p.type === 'operator' ? 'OPERATOR' : (p.type === 'red' ? sc : ''); 
-                    m.onclick = (e) => { e.stopPropagation(); points.splice(i, 1); renderAll(); }; 
-                    overlay.appendChild(m); 
+                    m.onclick = (e) => { e.stopPropagation(); points.splice(i, 1); renderAll(); }; overlay.appendChild(m); 
                 } 
-                
                 if (isStep) { 
-                    const row = document.createElement('div'); 
-                    row.className = "flex items-start gap-3 p-4 bg-slate-50 rounded-2xl mb-3 group border border-slate-100 hover:border-slate-300 transition-colors"; 
+                    const row = document.createElement('div'); row.className = "flex items-start gap-3 p-4 bg-slate-50 rounded-2xl mb-3 group border border-slate-100 hover:border-slate-300 transition-colors"; 
                     row.innerHTML = `<span class="w-6 h-6 rounded-lg bg-red-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md mt-1">${sc}</span>
                                     <textarea class="step-description-area flex-grow" oninput="points[${i}].description=this.value; autoResizeStepArea(this)" placeholder="Step description...">${p.description}</textarea>
-                                    <button onclick="points.splice(${i},1); renderAll();" class="text-red-400 hover:text-red-600 transition-all p-1 mt-1">
-                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                    </button>`; 
+                                    <button onclick="points.splice(${i},1); renderAll();" class="text-red-400 hover:text-red-600 transition-all p-1 mt-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`; 
                     table.appendChild(row); 
                     setTimeout(() => { const ta = row.querySelector('textarea'); if(ta) autoResizeStepArea(ta); }, 0);
                 } 
             });
             lucide.createIcons();
         }
-        function getHexColor(c) { 
-            const colors = { blue: '#3b82f6', green: '#22c55e', orange: '#f97316', red: '#ef4444', purple: '#a855f7' };
-            return colors[c] || colors.red;
-        }
+        function getHexColor(c) { const colors = { blue: '#3b82f6', green: '#22c55e', orange: '#f97316', red: '#ef4444', purple: '#a855f7' }; return colors[c] || colors.red; }
         function drawArrow(c, fx, fy, tx, ty, color) { const headlen = 22; const angle = Math.atan2(ty - fy, tx - fx); c.beginPath(); c.strokeStyle = color; c.lineWidth = 8; c.lineCap = "round"; c.moveTo(fx, fy); c.lineTo(tx, ty); c.stroke(); c.beginPath(); c.fillStyle = color; c.moveTo(tx, ty); c.lineTo(tx - headlen * Math.cos(angle - Math.PI/6), ty - headlen * Math.sin(angle - Math.PI/6)); c.lineTo(tx - headlen * Math.cos(angle + Math.PI/6), ty - headlen * Math.sin(angle + Math.PI/6)); c.closePath(); c.fill(); }
         function handleFileChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { images[activeIdx] = img; renderAll(); }; img.src = ev.target.result; }; r.readAsDataURL(f); }
         function handleLogoChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const p = get('logoPreview'); p.src = ev.target.result; p.classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }; r.readAsDataURL(f); }
         function toggleLoading(s, t) { const l = get('loading'); if(l) { get('loadingText').innerText = t; if(s) l.classList.add('active'); else l.classList.remove('active'); } }
-        async function handleSave() { const title = get('sopTitleInput').value; if(!title) return alert("Please enter a title."); toggleLoading(true, "Saving..."); try { const filename = `SOP_${Date.now()}_${title.toUpperCase().replace(/[^A-Z0-9]/g, '_')}.json`; const path = `public/data/${activeProject}/${filename}`; 
+        async function handleSave() { const title = get('sopTitleInput').value; if(!title) return alert("Title missing."); toggleLoading(true, "Saving..."); try { const filename = `SOP_${Date.now()}_${title.toUpperCase().replace(/[^A-Z0-9]/g, '_')}.json`; const path = `public/data/${activeProject}/${filename}`; 
         const state = { title, subtitle: activeProject, points, arrows, warnings, logo: get('logoPreview').src || null, images: images.map(img => img ? (img.src || img) : null) }; 
         await supabaseClient.storage.from(BUCKET_NAME).upload(path, new Blob([JSON.stringify(state)], { type: 'application/json' }), { upsert: true }); toggleLoading(false); showQr(path, title); fetchArchive(); } catch (e) { showMessage("Error", e.message); toggleLoading(false); } }
         function resetApp() { images = [null]; activeIdx = 0; points = []; arrows = []; warnings = []; get('sopTitleInput').value = ''; get('logoPreview').classList.add('hidden'); get('logoPlaceholder').classList.remove('hidden'); renderAll(); renderWarnings(); }
