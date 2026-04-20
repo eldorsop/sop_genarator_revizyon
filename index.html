@@ -131,25 +131,18 @@
         .tab-btn {
             position: relative;
             transition: all 0.3s;
-            padding: 12px 16px;
+            padding: 10px 14px;
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -1px;
         }
         .tab-btn.active { 
             color: var(--eldor-navy); 
             font-weight: 800; 
-        }
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: var(--eldor-navy);
-            border-radius: 4px;
+            border-bottom-color: var(--eldor-navy);
         }
 
         #gatewayScreen, #loginScreen, #modeSelectionScreen { 
@@ -412,7 +405,7 @@
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Your Email Address</label>
                     <input type="email" id="userEmailInput" class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 mt-2 font-bold" placeholder="name.surname@eldor.com.tr">
                 </div>
-                <div id="emailTargetInfo" class="bg-blue-50 p-4 rounded-xl text-[11px] text-[#000080] font-bold border border-blue-100 text-center">
+                <div id="emailTargetInfo" class="bg-blue-50 p-4 rounded-xl text-[11px] text-[#000080] font-bold border border-blue-100 text-center text-center">
                     Requested Project: <span id="targetProjectName" class="underline">System General</span>
                 </div>
             </div>
@@ -423,7 +416,7 @@
         </div>
     </div>
 
-    <!-- Main Container -->
+    <!-- Main App Container -->
     <div class="app-container hidden opacity-0 transition-opacity duration-700" id="mainApp">
         <aside id="sidebar" class="sidebar shadow-2xl">
             <div class="p-8 border-b flex flex-col gap-6 bg-slate-50/50">
@@ -449,6 +442,7 @@
                 <button id="startNewSopBtn" class="hidden px-10 py-5 bg-[#000080] text-white rounded-2xl font-black shadow-2xl hover:scale-105 transition-all uppercase text-xs tracking-widest">ADD NEW INSTRUCTION</button>
             </div>
 
+            <!-- EDITOR PANEL -->
             <div id="sopEditor" class="hidden max-w-6xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                 <div class="flex flex-col lg:flex-row items-center gap-8 bg-white p-8 rounded-[32px] shadow-sm border border-slate-200">
                     <div id="logoUploadBox" class="w-24 h-24 shrink-0 border-2 border-dashed border-slate-200 rounded-[20px] flex items-center justify-center cursor-pointer bg-slate-50 relative hover:bg-slate-100 transition-colors group">
@@ -469,8 +463,9 @@
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 pb-32">
                     <div class="xl:col-span-2 space-y-8">
                         <div class="bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm">
-                            <div class="flex border-b border-slate-100 mb-8 gap-10">
-                                <div id="tabsContainer" class="flex gap-4 overflow-x-auto custom-scrollbar"></div>
+                            <div class="border-b border-slate-100 mb-8">
+                                <!-- TABS CONTAINER UPDATED: flex-wrap added, scrolling removed -->
+                                <div id="tabsContainer" class="flex flex-wrap gap-2 items-center"></div>
                             </div>
                             <div id="uploadArea" class="bg-slate-50 py-32 rounded-3xl border-2 border-dashed border-slate-200 text-center cursor-pointer hover:bg-slate-100 transition-all">
                                 <i data-lucide="image-plus" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i>
@@ -706,27 +701,18 @@
             });
         }
 
-        // --- NEW: Remove Tab Function ---
         function removeTab(index) {
             if (images.length <= 1) {
                 showMessage("Warning", "At least one image tab must remain.", "error");
                 return;
             }
             showConfirm("Delete Tab", `Are you sure you want to delete Tab ${index + 1} and all its markers?`, () => {
-                // Remove markers/arrows for this tab
                 points = points.filter(p => p.imgIdx !== index || p.isManual);
                 arrows = arrows.filter(a => a.imgIdx !== index);
-                
-                // Adjust indices for remaining markers/arrows
                 points.forEach(p => { if(!p.isManual && p.imgIdx > index) p.imgIdx--; });
                 arrows.forEach(a => { if(a.imgIdx > index) a.imgIdx--; });
-
-                // Remove from images array
                 images.splice(index, 1);
-
-                // Adjust active index
                 if (activeIdx >= images.length) activeIdx = images.length - 1;
-                
                 renderAll();
             });
         }
@@ -738,9 +724,11 @@
             images.forEach((img, i) => {
                 const btn = document.createElement('button');
                 btn.className = `tab-btn relative px-4 py-3 text-xs font-black uppercase tracking-widest whitespace-nowrap shrink-0 ${activeIdx === i ? 'active' : ''}`;
-                btn.innerHTML = `<span>Image ${i + 1}</span>`;
                 
-                // ADD X BUTTON FOR TABS
+                const label = document.createElement('span');
+                label.innerText = `Image ${i + 1}`;
+                btn.appendChild(label);
+                
                 const closeX = document.createElement('span');
                 closeX.className = "ml-2 p-1 hover:bg-red-500 hover:text-white rounded-full transition-colors text-[10px] leading-none";
                 closeX.innerText = "✕";
@@ -763,9 +751,8 @@
                 get('newProjectNameInput').value = "";
                 get('newProjectUserInput').value = "";
                 get('newProjectPassInput').value = "";
-                const modal = get('newProjectModal');
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+                get('newProjectModal').classList.remove('hidden');
+                get('newProjectModal').classList.add('flex');
                 lucide.createIcons();
             };
 
@@ -792,9 +779,8 @@
                 let target = "System General";
                 if (pendingPath) { const parts = pendingPath.split('/'); target = (parts.length > 2) ? parts[2] : "System General"; }
                 get('targetProjectName').innerText = target;
-                const modal = get('emailAuthModal');
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+                get('emailAuthModal').classList.remove('hidden');
+                get('emailAuthModal').classList.add('flex');
             };
 
             get('sendEmailBtn').onclick = handleSendAuthEmail;
@@ -855,11 +841,23 @@
                 };
             });
             
-            get('addManualBtn').onclick = () => { points.push({ type: lastColor, isManual: true, description: '', imgIdx: -1 }); renderAll(); };
+            get('addManualBtn').onclick = () => { points.push({ type: 'blue', isManual: true, description: '', imgIdx: -1 }); renderAll(); };
             get('addWarningBtn').onclick = () => { warnings.push({ text: '' }); renderWarnings(); };
         }
 
-        function loginSuccess(role, project) { currentUser = { role, project }; if (role === 'admin') localStorage.setItem('isEldor', 'true'); get('loginScreen').style.display = 'none'; get('gatewayScreen').style.display = 'none'; const m = get('mainApp'); m.classList.remove('hidden'); setTimeout(() => m.style.opacity = '1', 50); if (role === 'admin') get('addNewProjectBtn').classList.remove('hidden'); if (role === 'project') selectProject(project); fetchArchive(); }
+        function loginSuccess(role, project) { 
+            currentUser = { role, project }; 
+            if (role === 'admin') localStorage.setItem('isEldor', 'true'); 
+            get('loginScreen').style.display = 'none'; 
+            get('gatewayScreen').style.display = 'none'; 
+            const m = get('mainApp'); 
+            m.classList.remove('hidden'); 
+            setTimeout(() => m.style.opacity = '1', 50); 
+            if (role === 'admin') get('addNewProjectBtn').classList.remove('hidden'); 
+            if (role === 'project') selectProject(project); 
+            fetchArchive(); 
+        }
+
         function logout() { localStorage.removeItem('isEldor'); window.location.reload(); }
         function showModeSelection(path) { pendingPath = path; get('modeSelectionScreen').style.display = 'flex'; }
         function handleModeChoice(mode) { get('modeSelectionScreen').style.display = 'none'; if (mode === 'operator') loadOperatorSop(pendingPath); else { loginPurpose = 'engineer_edit'; get('loginHeading').innerText = "Engineer Access"; get('loginError').classList.add('hidden'); get('backToGateway').classList.remove('hidden'); get('loginScreen').style.display = 'flex'; } }
@@ -988,7 +986,7 @@
                 for(let i=0; i<sImages.length; i++) {
                     if(sImages[i]) {
                         const img = new Image();
-                        img.src = sImages[i];
+                        img.src = (typeof sImages[i] === 'string' && sImages[i].startsWith('data:')) ? sImages[i] : sImages[i];
                         await new Promise(r => img.onload = r);
                         images.push(img);
                     } else {
@@ -1024,7 +1022,9 @@
                 } 
                 if (isStep) { 
                     const row = document.createElement('div'); row.className = "flex items-start gap-3 p-4 bg-slate-50 rounded-2xl mb-3 group border border-slate-100 hover:border-slate-300 transition-colors"; 
-                    row.innerHTML = `<span class="w-6 h-6 rounded-lg bg-red-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md mt-1">${sc}</span>
+                    const colorClass = p.isManual ? 'bg-blue-600' : 'bg-red-600';
+
+                    row.innerHTML = `<span class="w-6 h-6 rounded-lg ${colorClass} text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md mt-1">${sc}</span>
                                     <textarea class="step-description-area flex-grow" oninput="points[${i}].description=this.value; autoResizeStepArea(this)" placeholder="Step description...">${p.description}</textarea>
                                     <button onclick="points.splice(${i},1); renderAll();" class="text-red-400 hover:text-red-600 transition-all p-1 mt-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`; 
                     table.appendChild(row); 
@@ -1038,7 +1038,7 @@
         function handleFileChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { images[activeIdx] = img; renderAll(); }; img.src = ev.target.result; }; r.readAsDataURL(f); }
         function handleLogoChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const p = get('logoPreview'); p.src = ev.target.result; p.classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }; r.readAsDataURL(f); }
         function toggleLoading(s, t) { const l = get('loading'); if(l) { get('loadingText').innerText = t; if(s) l.classList.add('active'); else l.classList.remove('active'); } }
-        async function handleSave() { const title = get('sopTitleInput').value; if(!title) return alert("Title missing."); toggleLoading(true, "Saving..."); try { const filename = `SOP_${Date.now()}_${title.toUpperCase().replace(/[^A-Z0-9]/g, '_')}.json`; const path = `public/data/${activeProject}/${filename}`; 
+        async function handleSave() { const title = get('sopTitleInput').value; if(!title) return alert("Please enter a title."); toggleLoading(true, "Saving..."); try { const filename = `SOP_${Date.now()}_${title.toUpperCase().replace(/[^A-Z0-9]/g, '_')}.json`; const path = `public/data/${activeProject}/${filename}`; 
         const state = { title, subtitle: activeProject, points, arrows, warnings, logo: get('logoPreview').src || null, images: images.map(img => img ? (img.src || img) : null) }; 
         await supabaseClient.storage.from(BUCKET_NAME).upload(path, new Blob([JSON.stringify(state)], { type: 'application/json' }), { upsert: true }); toggleLoading(false); showQr(path, title); fetchArchive(); } catch (e) { showMessage("Error", e.message); toggleLoading(false); } }
         function resetApp() { images = [null]; activeIdx = 0; points = []; arrows = []; warnings = []; get('sopTitleInput').value = ''; get('logoPreview').classList.add('hidden'); get('logoPlaceholder').classList.remove('hidden'); renderAll(); renderWarnings(); }
