@@ -159,38 +159,15 @@
             inset: 0; 
             background: #f1f5f9; 
             z-index: 9000; 
-            overflow-y: auto; 
+            overflow: hidden; 
             display: none; 
         }
 
         .step-card { 
             transition: all 0.2s ease-in-out; 
-            cursor: pointer; 
             border-left: 5px solid transparent; 
         }
         .step-card:hover { transform: translateX(4px); background: #fff !important; }
-        .check-indicator { 
-            width: 36px; 
-            height: 36px; 
-            border: 2px solid #cbd5e1; 
-            border-radius: 12px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            transition: all 0.2s; 
-            background: white; 
-            flex-shrink: 0; 
-        }
-        .step-card.completed { 
-            opacity: 0.7; 
-            border-left-color: #22c55e; 
-            background: #f0fdf4 !important; 
-        }
-        .step-card.completed .check-indicator { 
-            background-color: #22c55e; 
-            border-color: #22c55e; 
-            color: white; 
-        }
         
         .project-group-header { 
             padding: 12px 16px; 
@@ -230,6 +207,7 @@
         .op-media-slide {
             display: none;
             animation: fadeIn 0.3s ease-in;
+            height: 100%;
         }
         .op-media-slide.active {
             display: block;
@@ -430,9 +408,7 @@
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 pb-32">
                     <div class="xl:col-span-2 space-y-8">
                         <div class="bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm">
-                            <!-- Dynamic Tabs Container -->
                             <div class="flex items-center border-b border-slate-100 mb-8 overflow-x-auto custom-scrollbar gap-2" id="tabsContainer">
-                                <!-- Tabs will be generated here -->
                             </div>
                             <div id="uploadArea" class="bg-slate-50 py-32 rounded-3xl border-2 border-dashed border-slate-200 text-center cursor-pointer hover:bg-slate-100 transition-all">
                                 <i data-lucide="image-plus" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i>
@@ -493,11 +469,13 @@
             </div>
         </header>
         
-        <main class="flex-grow flex flex-col overflow-hidden bg-slate-50">
-            <!-- Carousel Container -->
+        <main class="flex-grow flex flex-col min-h-0 bg-slate-50">
+            <!-- Carousel Container - Limited height to ensure steps are visible -->
             <div class="relative bg-white border-b border-slate-200 p-4 shrink-0 flex flex-col items-center">
-                <div class="relative w-full max-w-4xl">
-                    <div id="opMedia" class="relative rounded-2xl overflow-hidden shadow-lg border border-slate-100 bg-slate-50"></div>
+                <div class="relative w-full max-w-4xl h-[45vh] max-h-[500px]">
+                    <div id="opMedia" class="relative rounded-2xl overflow-hidden shadow-lg border border-slate-100 bg-slate-50 h-full">
+                        <!-- Slides injected here -->
+                    </div>
                     
                     <!-- Navigation Arrows -->
                     <button onclick="changeOpSlide(-1)" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full shadow-lg border border-slate-100 flex items-center justify-center text-[#000080] hover:bg-white transition-all z-30" id="prevSlideBtn">
@@ -514,8 +492,8 @@
                 <div id="opWarningsArea" class="hidden mt-4 w-full max-w-4xl bg-red-50 border-l-8 border-red-600 p-4 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300"></div>
             </div>
 
-            <!-- Steps List (Scrollable) -->
-            <div class="flex-grow overflow-y-auto p-6">
+            <!-- Steps List (Properly Scrollable) -->
+            <div class="flex-grow overflow-y-auto p-6 min-h-0">
                 <div class="max-w-4xl mx-auto">
                     <div class="flex items-center gap-3 mb-6">
                         <div class="h-px bg-slate-200 flex-grow"></div>
@@ -524,7 +502,6 @@
                     </div>
                     <div id="opStepsList" class="space-y-4 pb-4"></div>
                     
-                    <!-- New: Editor Metadata Footer -->
                     <div id="opMetadataFooter" class="pt-8 border-t border-slate-200 text-center pb-12 opacity-40 hover:opacity-100 transition-opacity">
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]" id="lastEditedText">Last updated by: Unknown</p>
                     </div>
@@ -941,7 +918,6 @@
                 get('opSopSubtitle').innerText = s.subtitle;
                 get('opLogoContainer').innerHTML = s.logo ? `<img src="${s.logo}" class="w-full h-full object-contain">` : '<i data-lucide="file-text" class="w-6 h-6 text-[#000080]"></i>';
                 
-                // Set metadata footer
                 get('lastEditedText').innerText = `Last updated by: ${s.lastEditedBy || 'Unknown'}`;
 
                 const media = get('opMedia'); media.innerHTML = '';
@@ -961,8 +937,8 @@
                 const validImages = s.images.filter(img => img !== null);
                 validImages.forEach((src, idx) => {
                     const slide = document.createElement('div');
-                    slide.className = `op-media-slide relative w-full ${idx === 0 ? 'active' : ''}`;
-                    slide.innerHTML = `<img src="${src}" class="w-full h-auto object-cover">`;
+                    slide.className = `op-media-slide relative w-full h-full ${idx === 0 ? 'active' : ''}`;
+                    slide.innerHTML = `<img src="${src}" class="w-full h-full object-contain">`;
                     
                     let scCount = 0;
                     s.points.forEach(p => {
@@ -989,8 +965,11 @@
                         stepNum++;
                         const card = document.createElement('div');
                         card.className = "step-card bg-white p-6 rounded-2xl flex items-center gap-6 shadow-sm border border-slate-100";
-                        card.innerHTML = `<div class="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-black shrink-0 shadow-lg">${stepNum}</div><p class="text-base font-bold text-slate-700 flex-grow">${p.description}</p><div class="check-indicator"><i data-lucide="check" class="w-5 h-5"></i></div>`;
-                        card.onclick = () => card.classList.toggle('completed');
+                        
+                        // Dynamically set badge color based on isManual
+                        const badgeColorClass = p.isManual ? 'bg-blue-600' : 'bg-red-600';
+                        
+                        card.innerHTML = `<div class="w-10 h-10 rounded-xl ${badgeColorClass} text-white flex items-center justify-center font-black shrink-0 shadow-lg">${stepNum}</div><p class="text-base font-bold text-slate-700 flex-grow">${p.description}</p>`;
                         steps.appendChild(card);
                     }
                 });
@@ -1145,8 +1124,12 @@
                 } 
                 if (isStep) { 
                     const row = document.createElement('div'); 
-                    row.className = "flex items-center gap-3 p-4 bg-slate-50 rounded-2xl mb-3 group border border-slate-100 hover:border-slate-300 transition-colors"; 
-                    row.innerHTML = `<span class="w-6 h-6 rounded-lg bg-red-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">${sc}</span><input class="flex-grow bg-transparent text-[13px] outline-none font-bold text-slate-700" value="${p.description}" oninput="points[${i}].description=this.value" placeholder="Step description..."><button onclick="points.splice(${i},1); renderAll();" class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`; 
+                    row.className = "flex items-center gap-3 p-4 bg-slate-50 rounded-2xl mb-3 group border border-slate-100 hover:border-slate-300 transition-colors";
+                    
+                    // Logic for Editor List Badge color
+                    const badgeColorClass = p.isManual ? 'bg-blue-600' : 'bg-red-600';
+                    
+                    row.innerHTML = `<span class="w-6 h-6 rounded-lg ${badgeColorClass} text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">${sc}</span><input class="flex-grow bg-transparent text-[13px] outline-none font-bold text-slate-700" value="${p.description}" oninput="points[${i}].description=this.value" placeholder="Step description..."><button onclick="points.splice(${i},1); renderAll();" class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`; 
                     table.appendChild(row); 
                 } 
             });
@@ -1206,7 +1189,7 @@
                     warnings, 
                     logo: get('logoPreview').src || null, 
                     images: images.map(img => img ? img.src : null),
-                    lastEditedBy: currentUser.project || 'System Admin' // Track who edited
+                    lastEditedBy: currentUser.project || 'System Admin' 
                 }; 
                 await supabaseClient.storage.from(BUCKET_NAME).upload(path, new Blob([JSON.stringify(state)], { type: 'application/json' }), { upsert: true }); 
                 toggleLoading(false); 
