@@ -131,6 +131,11 @@
         .tab-btn {
             position: relative;
             transition: all 0.3s;
+            padding: 12px 16px;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .tab-btn.active { 
             color: var(--eldor-navy); 
@@ -225,7 +230,7 @@
         }
         .loading-overlay.active { display: flex; }
 
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
@@ -407,7 +412,7 @@
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Your Email Address</label>
                     <input type="email" id="userEmailInput" class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 mt-2 font-bold" placeholder="name.surname@eldor.com.tr">
                 </div>
-                <div id="emailTargetInfo" class="bg-blue-50 p-4 rounded-xl text-[11px] text-[#000080] font-bold border border-blue-100 text-center text-center">
+                <div id="emailTargetInfo" class="bg-blue-50 p-4 rounded-xl text-[11px] text-[#000080] font-bold border border-blue-100 text-center">
                     Requested Project: <span id="targetProjectName" class="underline">System General</span>
                 </div>
             </div>
@@ -418,7 +423,7 @@
         </div>
     </div>
 
-    <!-- Main Container (Sidebar & Editor) -->
+    <!-- Main Container -->
     <div class="app-container hidden opacity-0 transition-opacity duration-700" id="mainApp">
         <aside id="sidebar" class="sidebar shadow-2xl">
             <div class="p-8 border-b flex flex-col gap-6 bg-slate-50/50">
@@ -537,6 +542,16 @@
     <div id="loading" class="loading-overlay">
         <div class="w-16 h-16 border-4 border-[#000080] border-t-transparent rounded-full animate-spin mb-6"></div>
         <p class="font-black text-[#000080] text-lg uppercase tracking-tighter" id="loadingText">Loading...</p>
+    </div>
+
+    <!-- QR Modal -->
+    <div id="qrModal" class="fixed inset-0 bg-black/70 z-[9995] hidden items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-white rounded-3xl max-sm w-full p-6 shadow-2xl text-center relative">
+            <h3 class="text-lg font-bold mb-4" id="qrModalTitle">SOP Information</h3>
+            <div id="qrcode" class="bg-white p-2 rounded-2xl border border-slate-100 inline-block mb-4"></div>
+            <p class="text-slate-400 text-xs mb-4 uppercase font-bold tracking-widest">Access Options QR</p>
+            <button onclick="get('qrModal').classList.add('hidden'); get('qrModal').classList.remove('flex');" class="w-full py-3 bg-slate-200 text-slate-700 rounded-xl font-bold uppercase text-xs">Close</button>
+        </div>
     </div>
 
     <script>
@@ -691,14 +706,47 @@
             });
         }
 
+        // --- NEW: Remove Tab Function ---
+        function removeTab(index) {
+            if (images.length <= 1) {
+                showMessage("Warning", "At least one image tab must remain.", "error");
+                return;
+            }
+            showConfirm("Delete Tab", `Are you sure you want to delete Tab ${index + 1} and all its markers?`, () => {
+                // Remove markers/arrows for this tab
+                points = points.filter(p => p.imgIdx !== index || p.isManual);
+                arrows = arrows.filter(a => a.imgIdx !== index);
+                
+                // Adjust indices for remaining markers/arrows
+                points.forEach(p => { if(!p.isManual && p.imgIdx > index) p.imgIdx--; });
+                arrows.forEach(a => { if(a.imgIdx > index) a.imgIdx--; });
+
+                // Remove from images array
+                images.splice(index, 1);
+
+                // Adjust active index
+                if (activeIdx >= images.length) activeIdx = images.length - 1;
+                
+                renderAll();
+            });
+        }
+
         function renderTabs() {
             const container = get('tabsContainer');
             if(!container) return;
             container.innerHTML = '';
             images.forEach((img, i) => {
                 const btn = document.createElement('button');
-                btn.className = `tab-btn px-4 py-3 text-xs font-black uppercase tracking-widest whitespace-nowrap shrink-0 ${activeIdx === i ? 'active' : ''}`;
-                btn.innerText = `Image ${i + 1}`;
+                btn.className = `tab-btn relative px-4 py-3 text-xs font-black uppercase tracking-widest whitespace-nowrap shrink-0 ${activeIdx === i ? 'active' : ''}`;
+                btn.innerHTML = `<span>Image ${i + 1}</span>`;
+                
+                // ADD X BUTTON FOR TABS
+                const closeX = document.createElement('span');
+                closeX.className = "ml-2 p-1 hover:bg-red-500 hover:text-white rounded-full transition-colors text-[10px] leading-none";
+                closeX.innerText = "✕";
+                closeX.onclick = (e) => { e.stopPropagation(); removeTab(i); };
+                
+                btn.appendChild(closeX);
                 btn.onclick = () => { activeIdx = i; renderAll(); };
                 container.appendChild(btn);
             });
@@ -715,8 +763,9 @@
                 get('newProjectNameInput').value = "";
                 get('newProjectUserInput').value = "";
                 get('newProjectPassInput').value = "";
-                get('newProjectModal').classList.remove('hidden');
-                get('newProjectModal').classList.add('flex');
+                const modal = get('newProjectModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
                 lucide.createIcons();
             };
 
@@ -743,8 +792,9 @@
                 let target = "System General";
                 if (pendingPath) { const parts = pendingPath.split('/'); target = (parts.length > 2) ? parts[2] : "System General"; }
                 get('targetProjectName').innerText = target;
-                get('emailAuthModal').classList.remove('hidden');
-                get('emailAuthModal').classList.add('flex');
+                const modal = get('emailAuthModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
             };
 
             get('sendEmailBtn').onclick = handleSendAuthEmail;
