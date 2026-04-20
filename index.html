@@ -444,6 +444,7 @@
                 <button id="startNewSopBtn" class="hidden px-10 py-5 bg-[#000080] text-white rounded-2xl font-black shadow-2xl hover:scale-105 transition-all uppercase text-xs tracking-widest">ADD NEW INSTRUCTION</button>
             </div>
 
+            <!-- EDITOR PANEL -->
             <div id="sopEditor" class="hidden max-w-6xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                 <div class="flex flex-col lg:flex-row items-center gap-8 bg-white p-8 rounded-[32px] shadow-sm border border-slate-200">
                     <div id="logoUploadBox" class="w-24 h-24 shrink-0 border-2 border-dashed border-slate-200 rounded-[20px] flex items-center justify-center cursor-pointer bg-slate-50 relative hover:bg-slate-100 transition-colors group">
@@ -465,12 +466,12 @@
                     <div class="xl:col-span-2 space-y-8">
                         <div class="bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm">
                             <div class="flex border-b border-slate-100 mb-8 gap-10">
-                                <button id="tab0" class="tab-btn active px-4 py-3 text-xs font-black uppercase tracking-widest">Image 1</button>
-                                <button id="tab1" class="tab-btn px-4 py-3 text-xs font-black uppercase tracking-widest">Image 2</button>
+                                <!-- DYNAMIC TABS CONTAINER -->
+                                <div id="tabsContainer" class="flex gap-4 overflow-x-auto custom-scrollbar"></div>
                             </div>
                             <div id="uploadArea" class="bg-slate-50 py-32 rounded-3xl border-2 border-dashed border-slate-200 text-center cursor-pointer hover:bg-slate-100 transition-all">
                                 <i data-lucide="image-plus" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i>
-                                <p class="font-black text-slate-400 uppercase text-xs tracking-widest">Upload Main Image Here</p>
+                                <p class="font-black text-slate-400 uppercase text-xs tracking-widest">Upload Image for Current Tab</p>
                                 <input type="file" id="fileInput" class="hidden" accept="image/*">
                             </div>
                             <div id="editorArea" class="hidden space-y-6">
@@ -567,7 +568,7 @@
         let supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentUser = { role: 'guest', project: null };
         let dynamicAuth = {}; 
-        let activeProject = null, activeIdx = 0, images = [null, null], points = [], arrows = [], warnings = [], currentMode = 'red', lastColor = 'red', tempArrowStart = null, ctx = null;
+        let activeProject = null, activeIdx = 0, images = [null], points = [], arrows = [], warnings = [], currentMode = 'red', lastColor = 'red', tempArrowStart = null, ctx = null;
         let pendingPath = null; 
         let loginPurpose = 'system'; 
 
@@ -693,15 +694,33 @@
             el.style.height = el.scrollHeight + 'px';
         }
 
-        // --- FIXED: clearCurrentImage function using showConfirm ---
         function clearCurrentImage() {
             showConfirm("Remove Image", "Are you sure you want to remove this image and its associated markers?", () => {
                 images[activeIdx] = null;
-                // Keep manual steps, but remove markers tied to this index
                 points = points.filter(p => p.imgIdx !== activeIdx || p.isManual);
                 arrows = arrows.filter(a => a.imgIdx !== activeIdx);
                 renderAll();
             });
+        }
+
+        // --- NEW: DYNAMIC TABS RENDERER ---
+        function renderTabs() {
+            const container = get('tabsContainer');
+            if(!container) return;
+            container.innerHTML = '';
+            images.forEach((img, i) => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn px-4 py-3 text-xs font-black uppercase tracking-widest whitespace-nowrap shrink-0 ${activeIdx === i ? 'active' : ''}`;
+                btn.innerText = `Image ${i + 1}`;
+                btn.onclick = () => { activeIdx = i; renderAll(); };
+                container.appendChild(btn);
+            });
+            const addBtn = document.createElement('button');
+            addBtn.className = "px-4 py-3 text-[#000080] hover:text-blue-900 transition-colors shrink-0 flex items-center justify-center";
+            addBtn.innerHTML = '<i data-lucide="plus-circle" class="w-6 h-6"></i>';
+            addBtn.onclick = () => { images.push(null); activeIdx = images.length - 1; renderAll(); };
+            container.appendChild(addBtn);
+            lucide.createIcons();
         }
 
         function attachListeners() {
@@ -709,8 +728,9 @@
                 get('newProjectNameInput').value = "";
                 get('newProjectUserInput').value = "";
                 get('newProjectPassInput').value = "";
-                get('newProjectModal').classList.remove('hidden');
-                get('newProjectModal').classList.add('flex');
+                const modal = get('newProjectModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
                 lucide.createIcons();
             };
 
@@ -790,7 +810,6 @@
             get('uploadArea').onclick = () => get('fileInput').click();
             get('logoUploadBox').onclick = () => get('logoInput').click();
             get('exportSupabaseBtn').onclick = handleSave;
-            [0, 1].forEach(i => { get(`tab${i}`).onclick = () => { activeIdx = i; document.querySelectorAll('.tab-btn').forEach((b, idx) => b.classList.toggle('active', idx === i)); renderAll(); }; });
             
             const tools = { toolRed:'red', toolBlue:'blue', toolGreen:'green', toolOrange:'orange', toolPurple:'purple', toolArrow:'arrow', toolOperator:'operator' };
             Object.entries(tools).forEach(([id, m]) => {
@@ -805,7 +824,7 @@
             get('addWarningBtn').onclick = () => { warnings.push({ text: '' }); renderWarnings(); };
         }
 
-        function loginSuccess(role, project) { currentUser = { role, project }; if (role === 'admin') localStorage.setItem('isEldor', 'true'); get('loginScreen').style.display = 'none'; get('gatewayScreen').style.display = 'none'; const m = get('mainApp'); m.classList.remove('hidden'); setTimeout(() => m.style.opacity = '1', 50); if (role === 'admin') get('addNewProjectBtn').classList.remove('hidden'); if (role === 'project') selectProject(project); fetchArchive(); }
+        function loginSuccess(role, project) { currentUser = { role, project }; if (role === 'admin') localStorage.setItem('isEldor') === 'true'; get('loginScreen').style.display = 'none'; get('gatewayScreen').style.display = 'none'; const m = get('mainApp'); m.classList.remove('hidden'); setTimeout(() => m.style.opacity = '1', 50); if (role === 'admin') get('addNewProjectBtn').classList.remove('hidden'); if (role === 'project') selectProject(project); fetchArchive(); }
         function logout() { localStorage.removeItem('isEldor'); window.location.reload(); }
         function showModeSelection(path) { pendingPath = path; get('modeSelectionScreen').style.display = 'flex'; }
         function handleModeChoice(mode) { get('modeSelectionScreen').style.display = 'none'; if (mode === 'operator') loadOperatorSop(pendingPath); else { loginPurpose = 'engineer_edit'; get('loginHeading').innerText = "Engineer Access"; get('loginError').classList.add('hidden'); get('backToGateway').classList.remove('hidden'); get('loginScreen').style.display = 'flex'; } }
@@ -825,7 +844,7 @@
                         <span class="truncate font-black">${projName}</span>
                         <div class="flex items-center gap-1">
                             <button onclick="event.stopPropagation(); selectProject('${projName}'); openEditorForNewSop();" class="p-1.5 hover:bg-blue-100 rounded-lg text-[#000080]" title="Add New SOP"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                            <button onclick="event.stopPropagation(); showCredentials('${projName}')" class="p-1.5 hover:bg-slate-200 rounded-lg text-slate-400" title="View Password"><i data-lucide="shield-ellipsis" class="w-4 h-4"></i></button>
+                            <button onclick="event.stopPropagation(); showCredentials('${projName}')" class="p-1.5 hover:bg-slate-200 rounded-lg text-slate-400" title="View Credentials"><i data-lucide="shield-ellipsis" class="w-4 h-4"></i></button>
                             <button onclick="event.stopPropagation(); deleteWholeProject('${projName}')" class="p-1.5 hover:bg-red-100 rounded-lg text-red-500" title="Delete Project"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             <i data-lucide="chevron-down" class="chevron w-4 h-4 ml-1"></i>
                         </div>`;
@@ -840,6 +859,8 @@
                             if (f.name.startsWith('SOP_')) { const pts = f.name.split('_'); if (pts.length > 2) cleanName = pts.slice(2).join(' ').replace('.json', ''); }
                             const div = document.createElement('div');
                             div.className = "p-3 hover:bg-slate-100 rounded-xl cursor-pointer text-[11px] font-bold flex items-center justify-between ml-3 mt-2 border border-transparent";
+                            
+                            // EYE ICON RESTORED
                             div.innerHTML = `
                                 <span onclick="event.stopPropagation(); loadSopData('${path}')" class="truncate flex-grow mr-2 uppercase tracking-tight">${cleanName}</span>
                                 <div class="flex gap-2 items-center">
@@ -926,7 +947,18 @@
                 get('sopTitleInput').value = s.title; get('sopSubtitleInput').value = s.subtitle;
                 selectProject(s.subtitle);
                 if(s.logo) { const p = get('logoPreview'); p.src = s.logo; p.classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }
-                for(let i=0; i<2; i++) if(s.images[i]) { const img = new Image(); img.src = s.images[i]; await new Promise(r => img.onload = r); images[i] = img; }
+                
+                // Load multiple images dynamically
+                images = s.images || [null];
+                for(let i=0; i<images.length; i++) {
+                    if(images[i]) {
+                        const img = new Image();
+                        img.src = images[i];
+                        await new Promise(r => img.onload = r);
+                        images[i] = img;
+                    }
+                }
+                
                 renderAll(); renderWarnings();
                 get('projectEmptyState').classList.add('hidden'); get('sopEditor').classList.remove('hidden');
             } catch(e) { showMessage("Error", "Failed."); } finally { toggleLoading(false); }
@@ -938,6 +970,7 @@
         function handleCanvasClick(e) { if(!images[activeIdx]) return; const rect = get('mainCanvas').getBoundingClientRect(); const x = ((e.clientX - rect.left) / rect.width) * 100, y = ((e.clientY - rect.top) / rect.height) * 100; if (currentMode === 'arrow') { if (!tempArrowStart) tempArrowStart = { x, y }; else { arrows.push({ x1: tempArrowStart.x, y1: tempArrowStart.y, x2: x, y2: y, color: getHexColor(lastColor), imgIdx: activeIdx }); tempArrowStart = null; renderAll(); } } else { points.push({ px: x, py: y, type: currentMode, description: '', imgIdx: activeIdx, isManual: false }); renderAll(); } }
         
         function renderAll() {
+            renderTabs(); // Redraw dynamic tabs
             const img = images[activeIdx]; const canvas = get('mainCanvas');
             if (img && ctx) { get('uploadArea').classList.add('hidden'); get('editorArea').classList.remove('hidden'); canvas.width = 1200; canvas.height = img.height * (1200 / img.width); ctx.drawImage(img, 0, 0, 1200, canvas.height); arrows.filter(a => a.imgIdx === activeIdx).forEach(a => drawArrow(ctx, (a.x1/100)*1200, (a.y1/100)*canvas.height, (a.x2/100)*1200, (a.y2/100)*canvas.height, a.color)); } else { get('uploadArea').classList.remove('hidden'); get('editorArea').classList.add('hidden'); }
             const overlay = get('markersOverlay'); overlay.innerHTML = ''; const table = get('tableBody'); table.innerHTML = '';
@@ -977,8 +1010,10 @@
         function handleFileChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { images[activeIdx] = img; renderAll(); }; img.src = ev.target.result; }; r.readAsDataURL(f); }
         function handleLogoChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const p = get('logoPreview'); p.src = ev.target.result; p.classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }; r.readAsDataURL(f); }
         function toggleLoading(s, t) { const l = get('loading'); if(l) { get('loadingText').innerText = t; if(s) l.classList.add('active'); else l.classList.remove('active'); } }
-        async function handleSave() { const title = get('sopTitleInput').value; if(!title) return alert("Please enter a title."); toggleLoading(true, "Saving..."); try { const filename = `SOP_${Date.now()}_${title.toUpperCase().replace(/[^A-Z0-9]/g, '_')}.json`; const path = `public/data/${activeProject}/${filename}`; const state = { title, subtitle: activeProject, points, arrows, warnings, logo: get('logoPreview').src || null, images: images.map(img => img ? img.src : null) }; await supabaseClient.storage.from(BUCKET_NAME).upload(path, new Blob([JSON.stringify(state)], { type: 'application/json' }), { upsert: true }); toggleLoading(false); showQr(path, title); fetchArchive(); } catch (e) { showMessage("Save Error", e.message); toggleLoading(false); } }
-        function resetApp() { images = [null, null]; points = []; arrows = []; warnings = []; get('sopTitleInput').value = ''; get('logoPreview').classList.add('hidden'); get('logoPlaceholder').classList.remove('hidden'); renderAll(); renderWarnings(); }
+        async function handleSave() { const title = get('sopTitleInput').value; if(!title) return alert("Please enter a title."); toggleLoading(true, "Saving..."); try { const filename = `SOP_${Date.now()}_${title.toUpperCase().replace(/[^A-Z0-9]/g, '_')}.json`; const path = `public/data/${activeProject}/${filename}`; 
+        const state = { title, subtitle: activeProject, points, arrows, warnings, logo: get('logoPreview').src || null, images: images.map(img => img ? (img.src || img) : null) }; 
+        await supabaseClient.storage.from(BUCKET_NAME).upload(path, new Blob([JSON.stringify(state)], { type: 'application/json' }), { upsert: true }); toggleLoading(false); showQr(path, title); fetchArchive(); } catch (e) { showMessage("Error", e.message); toggleLoading(false); } }
+        function resetApp() { images = [null]; activeIdx = 0; points = []; arrows = []; warnings = []; get('sopTitleInput').value = ''; get('logoPreview').classList.add('hidden'); get('logoPlaceholder').classList.remove('hidden'); renderAll(); renderWarnings(); }
         function renderWarnings() { const b = get('warningsContainer'); b.innerHTML = ''; warnings.forEach((w, i) => { const d = document.createElement('div'); d.className = "flex gap-3 bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm"; d.innerHTML = `<textarea class="flex-grow bg-transparent text-[11px] text-red-800 font-bold outline-none resize-none" rows="2" placeholder="Warning..." oninput="warnings[${i}].text=this.value">${w.text}</textarea><button onclick="warnings.splice(${i},1); renderWarnings();" class="text-red-300 hover:text-red-500 font-black text-xl">×</button>`; b.appendChild(d); }); }
         function exitOperatorView() { get('operatorView').style.display = 'none'; }
     </script>
