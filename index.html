@@ -259,6 +259,33 @@
         </div>
     </div>
 
+    <!-- Edit Auth Modal -->
+    <div id="editAuthModal" class="fixed inset-0 z-[11000] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+        <div class="bg-white rounded-[32px] p-10 max-sm w-full shadow-2xl text-center space-y-6 animate-in zoom-in duration-300">
+            <div class="w-20 h-20 bg-blue-50 rounded-full mx-auto flex items-center justify-center text-[#000080]">
+                <i data-lucide="shield-check" class="w-10 h-10"></i>
+            </div>
+            <div>
+                <h3 class="text-2xl font-black text-slate-900 uppercase">Edit Credentials</h3>
+                <p id="editAuthProjectName" class="text-slate-400 text-xs mt-1 font-black uppercase"></p>
+            </div>
+            <div class="space-y-3 text-left">
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2">Username</label>
+                    <input type="text" id="editProjectUserInput" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-center uppercase" placeholder="USERNAME">
+                </div>
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2">Password</label>
+                    <input type="text" id="editProjectPassInput" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-center" placeholder="PASSWORD">
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button id="saveEditedAuthBtn" class="flex-grow py-4 bg-[#000080] text-white rounded-2xl font-black shadow-lg hover:bg-blue-900 transition-all uppercase text-xs">Save Changes</button>
+                <button onclick="get('editAuthModal').classList.add('hidden'); get('editAuthModal').classList.remove('flex');" class="flex-grow py-4 bg-slate-100 text-slate-400 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-xs">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Message Box -->
     <div id="msgBox" class="fixed inset-0 z-[10000] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
         <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center animate-in zoom-in duration-200">
@@ -266,8 +293,15 @@
                 <i data-lucide="alert-triangle" class="w-8 h-8"></i>
             </div>
             <h4 id="msgTitle" class="font-black text-slate-900 text-xl mb-2">Information</h4>
-            <p id="msgText" class="text-sm text-slate-500 mb-8 leading-relaxed whitespace-pre-line"></p>
-            <button onclick="get('msgBox').classList.add('hidden'); get('msgBox').classList.remove('flex');" class="w-full py-4 bg-[#000080] text-white rounded-2xl font-bold shadow-lg hover:bg-blue-900 transition-colors">OK</button>
+            <div id="msgContent" class="space-y-4">
+                <p id="msgText" class="text-sm text-slate-500 mb-8 leading-relaxed whitespace-pre-line"></p>
+                <div id="msgExtraActions" class="space-y-2 hidden">
+                    <button id="msgEditBtn" class="w-full py-4 border-2 border-[#000080] text-[#000080] rounded-2xl font-black hover:bg-blue-50 transition-all uppercase text-xs tracking-widest flex items-center justify-center gap-2">
+                        <i data-lucide="edit" class="w-4 h-4"></i> Edit Credentials
+                    </button>
+                </div>
+                <button onclick="get('msgBox').classList.add('hidden'); get('msgBox').classList.remove('flex');" class="w-full py-4 bg-[#000080] text-white rounded-2xl font-bold shadow-lg hover:bg-blue-900 transition-colors">OK</button>
+            </div>
         </div>
     </div>
 
@@ -474,7 +508,6 @@
             <div class="relative bg-white border-b border-slate-200 p-4 shrink-0 flex flex-col items-center">
                 <div class="relative w-full max-w-4xl h-[45vh] max-h-[500px]">
                     <div id="opMedia" class="relative rounded-2xl overflow-hidden shadow-lg border border-slate-100 bg-slate-50 h-full">
-                        <!-- Slides injected here -->
                     </div>
                     
                     <!-- Navigation Arrows -->
@@ -535,7 +568,6 @@
     </div>
 
     <script>
-        // CONFIGURATION
         const SUPABASE_URL = 'https://rqfvepaidqmagxymjajp.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_JpwitHutc1HlchWlUkqnEg_ySn75yNM';
         const BUCKET_NAME = 'sop-pdfs'; 
@@ -592,6 +624,9 @@
             get('msgTitle').innerText = title;
             get('msgText').innerText = text;
             const icon = get('msgIcon');
+            const extra = get('msgExtraActions');
+            extra.classList.add('hidden');
+
             if (type === 'error') {
                 icon.className = "w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-6 bg-red-100 text-red-600";
                 icon.innerHTML = '<i data-lucide="alert-triangle" class="w-8 h-8"></i>';
@@ -601,9 +636,49 @@
             } else {
                 icon.className = "w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-6 bg-blue-100 text-blue-600";
                 icon.innerHTML = '<i data-lucide="shield-check" class="w-8 h-8"></i>';
+                
+                // If displaying project credentials AND is Eldor Admin, show edit button
+                if (title.includes("Credentials") && currentUser.role === 'admin') {
+                    extra.classList.remove('hidden');
+                    const projName = title.split(" ")[0];
+                    get('msgEditBtn').onclick = () => {
+                        get('msgBox').classList.add('hidden');
+                        get('msgBox').classList.remove('flex');
+                        openAuthEditor(projName);
+                    };
+                }
             }
             get('msgBox').classList.remove('hidden');
             get('msgBox').classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function openAuthEditor(projName) {
+            const upProj = projName.toUpperCase();
+            const data = dynamicAuth[upProj];
+            if (!data) return;
+
+            get('editAuthProjectName').innerText = upProj;
+            get('editProjectUserInput').value = (typeof data === 'object') ? data.user : upProj;
+            get('editProjectPassInput').value = (typeof data === 'object') ? data.pass : data;
+
+            get('editAuthModal').classList.remove('hidden');
+            get('editAuthModal').classList.add('flex');
+
+            get('saveEditedAuthBtn').onclick = async () => {
+                const newUser = get('editProjectUserInput').value.trim();
+                const newPass = get('editProjectPassInput').value.trim();
+
+                if (!newUser || !newPass) return showMessage("Error", "Fields cannot be empty.");
+
+                toggleLoading(true, "Updating credentials...");
+                dynamicAuth[upProj] = { user: newUser, pass: newPass };
+                await saveDynamicAuthToSupabase();
+                toggleLoading(false);
+                get('editAuthModal').classList.add('hidden');
+                get('editAuthModal').classList.remove('flex');
+                showMessage("Success", "Project credentials updated.", "success");
+            };
             lucide.createIcons();
         }
 
@@ -888,7 +963,7 @@
         }
 
         async function deleteWholeProject(projName) {
-            showConfirm("Delete Project", `Are you sure?`, async () => {
+            showConfirm("Delete Project", `Are you sure? Project "${projName}" and ALL its documents?`, async () => {
                 toggleLoading(true, "Deleting project...");
                 try {
                     const { data: files } = await supabaseClient.storage.from(BUCKET_NAME).list(`public/data/${projName}`);
@@ -966,7 +1041,6 @@
                         const card = document.createElement('div');
                         card.className = "step-card bg-white p-6 rounded-2xl flex items-center gap-6 shadow-sm border border-slate-100";
                         
-                        // Dynamically set badge color based on isManual
                         const badgeColorClass = p.isManual ? 'bg-blue-600' : 'bg-red-600';
                         
                         card.innerHTML = `<div class="w-10 h-10 rounded-xl ${badgeColorClass} text-white flex items-center justify-center font-black shrink-0 shadow-lg">${stepNum}</div><p class="text-base font-bold text-slate-700 flex-grow">${p.description}</p>`;
@@ -1126,7 +1200,6 @@
                     const row = document.createElement('div'); 
                     row.className = "flex items-center gap-3 p-4 bg-slate-50 rounded-2xl mb-3 group border border-slate-100 hover:border-slate-300 transition-colors";
                     
-                    // Logic for Editor List Badge color
                     const badgeColorClass = p.isManual ? 'bg-blue-600' : 'bg-red-600';
                     
                     row.innerHTML = `<span class="w-6 h-6 rounded-lg ${badgeColorClass} text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">${sc}</span><input class="flex-grow bg-transparent text-[13px] outline-none font-bold text-slate-700" value="${p.description}" oninput="points[${i}].description=this.value" placeholder="Step description..."><button onclick="points.splice(${i},1); renderAll();" class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`; 
