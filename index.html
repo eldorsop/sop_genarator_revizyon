@@ -144,7 +144,7 @@
             border-bottom-color: var(--eldor-navy);
         }
 
-        #gatewayScreen, #loginScreen, #modeSelectionScreen { 
+        #loginScreen, #modeSelectionScreen { 
             background: linear-gradient(135deg, #000080 0%, #000044 100%); 
             position: fixed; 
             inset: 0; 
@@ -321,39 +321,12 @@
         </div>
     </div>
 
-    <!-- Gateway Screen -->
-    <div id="gatewayScreen">
-        <div class="bg-white w-full max-w-md rounded-[32px] p-12 shadow-2xl space-y-8 text-center animate-in fade-in zoom-in duration-300">
-            <div class="w-24 h-24 bg-blue-50 rounded-3xl mx-auto flex items-center justify-center mb-4 rotate-3">
-                <i data-lucide="file-text" class="w-12 h-12 text-[#000080]"></i>
-            </div>
-            <div>
-                <h2 class="text-3xl font-black text-slate-900 uppercase tracking-tight">Talimat Erişimi</h2>
-                <p class="text-slate-500 text-sm mt-3 font-medium" id="gatewayInfo">Döküman bağlantısı başarıyla tespit edildi.</p>
-            </div>
-            <div class="grid gap-4">
-                <button id="viewSopBtn" class="w-full py-6 bg-slate-50 text-[#000080] border border-slate-200 rounded-2xl font-black hover:bg-slate-100 transition-all flex flex-col items-center justify-center gap-1 group">
-                    <span class="flex items-center gap-2 text-xl uppercase tracking-tight"><i data-lucide="eye" class="w-6 h-6"></i> Görüntüle</span>
-                    <span class="text-[10px] opacity-60 font-bold uppercase tracking-widest">Operatör / Teknik Mod</span>
-                </button>
-                <div class="relative py-2">
-                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-100"></div></div>
-                    <div class="relative flex justify-center text-[10px] uppercase font-black"><span class="bg-white px-4 text-slate-300">Yetkili İşlemler</span></div>
-                </div>
-                <button id="editSopBtn" class="w-full py-6 bg-[#000080] text-white rounded-2xl font-black shadow-xl hover:bg-blue-900 transition-all flex flex-col items-center justify-center gap-1 group">
-                    <span class="flex items-center gap-2 text-xl uppercase tracking-tight"><i data-lucide="edit-3" class="w-6 h-6"></i> Düzenle</span>
-                    <span class="text-[10px] opacity-50 font-bold uppercase tracking-widest">Mühendis Girişi</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Mode Selection Screen -->
     <div id="modeSelectionScreen">
         <div class="bg-white w-full max-w-2xl rounded-[40px] p-12 shadow-2xl space-y-10 text-center animate-in fade-in zoom-in duration-300">
             <div class="space-y-2">
-                <h2 class="text-4xl font-black text-slate-900 uppercase tracking-tighter">Görüntüleme Modu</h2>
-                <p class="text-slate-400 font-medium">Lütfen dökümanı hangi modda görüntülemek istediğinizi seçin.</p>
+                <h2 class="text-4xl font-black text-slate-900 uppercase tracking-tighter">Erişim Modu</h2>
+                <p class="text-slate-400 font-medium">Dökümanı hangi yetkiyle görüntülemek istersiniz?</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <button onclick="handleModeChoice('engineer')" class="group relative p-10 bg-slate-50 border-2 border-transparent hover:border-[#000080] rounded-[32px] transition-all text-left flex flex-col gap-6 shadow-sm">
@@ -377,7 +350,7 @@
                     <div class="mt-4 flex items-center text-[#000080] font-bold text-xs uppercase">ŞİFRESİZ ERİŞİM <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i></div>
                 </button>
             </div>
-            <button onclick="get('modeSelectionScreen').style.display='none'" class="text-slate-400 text-[10px] font-black uppercase hover:text-slate-700 tracking-widest">Geri Dön</button>
+            <button onclick="logout()" class="text-slate-400 text-[10px] font-black uppercase hover:text-slate-700 tracking-widest">Sistem Girişine Dön</button>
         </div>
     </div>
 
@@ -424,9 +397,7 @@
                     <button onclick="logout()" class="p-2.5 text-red-400 hover:bg-red-50 rounded-xl hide-on-collapse transition-colors"><i data-lucide="power" class="w-5 h-5"></i></button>
                 </div>
                 
-                <!-- DRAFT AREA -->
                 <div id="draftContainer" class="hide-on-collapse"></div>
-
                 <button id="addNewProjectBtn" class="hidden w-full py-4 bg-[#000080] text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 hide-on-collapse shadow-lg hover:shadow-blue-500/20 hover:-translate-y-0.5 transition-all uppercase tracking-widest"><i data-lucide="plus" class="w-4 h-4"></i> YENİ PROJE</button>
             </div>
             <div id="archiveSidebarList" class="flex-grow overflow-y-auto p-4 space-y-2 custom-scrollbar"></div>
@@ -575,9 +546,7 @@
         let loginPurpose = 'system'; 
         let currentSopPath = null; 
         
-        // Taslak Yönetimi
         let newSopDraft = null;
-
         let opCurrentSop = null;
         let opActiveIdx = 0;
 
@@ -587,19 +556,21 @@
             await loadDynamicAuth();
             attachListeners();
             lucide.createIcons();
+
             const params = new URLSearchParams(window.location.search);
             const viewParam = params.get('view'); 
+            
             if (viewParam) {
+                // QR Kod okutulduğunda doğrudan Operatör/Mühendis seçim ekranına yönlendir
                 pendingPath = viewParam.replace(/^\/+/, ''); 
-                get('gatewayScreen').style.display = 'flex';
-                const parts = pendingPath.split('/');
-                const projName = (parts.length > 2) ? parts[2] : "SOP";
-                get('gatewayInfo').innerText = `"${projName}" dökümanı erişime hazır.`;
+                showModeSelection(pendingPath);
             } else {
+                // QR yoksa standart giriş ekranını göster
                 const isAdmin = localStorage.getItem('isEldor') === 'true';
                 if (isAdmin) loginSuccess('admin', null);
                 else get('loginScreen').style.display = 'flex';
             }
+
             window.addEventListener('keydown', function(e) {
                 if (get('operatorView').style.display === 'flex') {
                     if (e.key === 'ArrowRight') nextOpImage();
@@ -666,47 +637,29 @@
 
         function createQrCanvasWithTitle(sourceCanvas, title) {
             const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d');
-            
-            // Çerçeve oranı 90mm (G) x 80mm (Y)
-            const qrSize = sourceCanvas.width; // 220px
+            const qrSize = sourceCanvas.width; 
             const totalWidth = 360; 
-            const totalHeight = Math.floor(totalWidth * (80/90)); // 320px
-            
+            const totalHeight = Math.floor(totalWidth * (80/90)); 
             tempCanvas.width = totalWidth; 
             tempCanvas.height = totalHeight;
-            
             tempCtx.fillStyle = '#ffffff'; 
             tempCtx.fillRect(0, 0, totalWidth, totalHeight);
-            
-            const titleFontSize = 26;
-            const footerFontSize = 10;
-            const spacing = 15;
-            
-            // Tüm içeriğin toplam yüksekliğini hesapla (Başlık + Boşluk + QR + Boşluk + Alt Metin)
+            const titleFontSize = 26; const footerFontSize = 10; const spacing = 15;
             const contentHeight = titleFontSize + spacing + qrSize + spacing + footerFontSize;
-            
-            // İçeriği Canvas'ın dikey ortasına yerleştirmek için başlangıç noktasını bul
             const startY = (totalHeight - contentHeight) / 2;
-
-            // 1. Başlık
             tempCtx.fillStyle = '#000080'; 
             tempCtx.font = `bold ${titleFontSize}px Inter, sans-serif`; 
             tempCtx.textAlign = 'center'; 
             tempCtx.textBaseline = 'top';
             const displayTitle = title.length > 22 ? title.substring(0, 19) + '...' : title;
             tempCtx.fillText(displayTitle.toUpperCase(), totalWidth / 2, startY);
-            
-            // 2. QR Kod
             const qrStartX = (totalWidth - qrSize) / 2;
             tempCtx.drawImage(sourceCanvas, qrStartX, startY + titleFontSize + spacing);
-            
-            // 3. Alt Bilgi
             tempCtx.fillStyle = '#94a3b8'; 
             tempCtx.font = `900 ${footerFontSize}px Inter, sans-serif`; 
             tempCtx.textAlign = 'center';
             tempCtx.textBaseline = 'top';
             tempCtx.fillText('ELDOR SOP SYSTEM - ACCESS QR', totalWidth / 2, startY + titleFontSize + spacing + qrSize + spacing);
-            
             return tempCanvas;
         }
 
@@ -721,7 +674,7 @@
             toggleLoading(true, `İşleniyor: ${projName}...`);
             try {
                 const { data: files } = await supabaseClient.storage.from(BUCKET_NAME).list(`public/data/${projName}`);
-                const jsonFiles = (files || []).filter(function(f) { return f.name.endsWith('.json'); });
+                const jsonFiles = (files || []).filter(f => f.name.endsWith('.json'));
                 if (jsonFiles.length === 0) { showMessage("Hata", "Bu projede döküman bulunamadı."); return; }
                 const zip = new JSZip(); const folder = zip.folder(`${projName}_QR_Codes`); const hiddenContainer = get('hiddenQrContainer');
                 for (let i = 0; i < jsonFiles.length; i++) {
@@ -743,7 +696,7 @@
                 const content = await zip.generateAsync({type: "blob"});
                 const link = document.createElement('a'); link.download = `${projName}_QR_ARSIVI.zip`; link.href = URL.createObjectURL(content); link.click();
                 showMessage("Başarılı", `${jsonFiles.length} adet QR paketlendi.`, "success");
-            } catch (err) { console.error(err); showMessage("Hata", "ZIP oluşturulamadı."); } finally { toggleLoading(false); get('hiddenQrContainer').innerHTML = ''; }
+            } catch (err) { showMessage("Hata", "ZIP oluşturulamadı."); } finally { toggleLoading(false); get('hiddenQrContainer').innerHTML = ''; }
         }
 
         async function printAllProjectQrs(projName) {
@@ -752,7 +705,6 @@
                 const { data: files } = await supabaseClient.storage.from(BUCKET_NAME).list(`public/data/${projName}`);
                 const jsonFiles = (files || []).filter(f => f.name.endsWith('.json'));
                 if (jsonFiles.length === 0) { showMessage("Hata", "Döküman bulunamadı."); return; }
-                
                 const items = []; const hiddenContainer = get('hiddenQrContainer');
                 for (let i = 0; i < jsonFiles.length; i++) {
                     const f = jsonFiles[i]; const path = `public/data/${projName}/${f.name}`;
@@ -768,68 +720,32 @@
                         items.push({ img: finalCanvas.toDataURL('image/png') });
                     }
                 }
-                
-                // 2x2 IZGARA DÜZENİ (SAYFA BAŞINA 4 ADET)
                 let printHtml = `<html><head><title>QR Yazdır</title><style>
                 body { margin: 0; padding: 0; background: #fff; }
-                .page { 
-                    width: 210mm; height: 297mm; padding: 10mm; 
-                    display: grid; grid-template-columns: 95mm 95mm; grid-template-rows: 135mm 135mm; 
-                    gap: 5mm; page-break-after: always; box-sizing: border-box; 
-                    justify-content: center; align-content: center;
-                }
-                .qr-card { 
-                    width: 90mm; height: 80mm; 
-                    border: 0.5mm solid #000000 !important; 
-                    display: flex; justify-content: center; align-items: center; 
-                    background: #ffffff; overflow: hidden; box-sizing: border-box;
-                    margin: auto;
-                }
+                .page { width: 210mm; height: 297mm; padding: 10mm; display: grid; grid-template-columns: 95mm 95mm; grid-template-rows: 135mm 135mm; gap: 5mm; page-break-after: always; box-sizing: border-box; justify-content: center; align-content: center; }
+                .qr-card { width: 90mm; height: 80mm; border: 0.5mm solid #000000 !important; display: flex; justify-content: center; align-items: center; background: #ffffff; overflow: hidden; box-sizing: border-box; margin: auto; }
                 .qr-card img { max-width: 99%; max-height: 99%; display: block; object-fit: contain; }
-                @media print { 
-                    body { background: none; -webkit-print-color-adjust: exact; } 
-                    .page { margin: 0; border: none; } 
-                }
+                @media print { body { background: none; -webkit-print-color-adjust: exact; } .page { margin: 0; border: none; } }
                 </style></head><body>`;
-                
-                for (let i = 0; i < items.length; i += 4) { 
+                for (let i = 0; i < items.length; i += 4) {
                     printHtml += `<div class="page">`;
-                    for (let j = i; j < i + 4 && j < items.length; j++) { 
-                        printHtml += `<div class="qr-card"><img src="${items[j].img}"></div>`; 
-                    }
+                    for (let j = i; j < i + 4 && j < items.length; j++) { printHtml += `<div class="qr-card"><img src="${items[j].img}"></div>`; }
                     printHtml += `</div>`;
                 }
                 printHtml += `</body></html>`;
-                
                 const printWin = window.open('', '_blank');
                 if (printWin) {
-                    printWin.document.write(printHtml);
-                    printWin.document.close();
-                    
+                    printWin.document.write(printHtml); printWin.document.close();
                     const checkLoaded = setInterval(() => {
                         if (printWin.document.readyState === 'complete') {
-                            clearInterval(checkLoaded);
-                            printWin.focus();
+                            clearInterval(checkLoaded); printWin.focus();
                             setTimeout(() => { printWin.print(); }, 500);
                         }
                     }, 500);
-                } else {
-                    const iframe = document.createElement('iframe');
-                    iframe.style.position = 'fixed'; iframe.style.right = '0'; iframe.style.bottom = '0';
-                    iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = '0';
-                    document.body.appendChild(iframe);
-                    const doc = iframe.contentWindow.document;
-                    doc.open(); doc.write(printHtml); doc.close();
-                    setTimeout(() => {
-                        iframe.contentWindow.focus();
-                        iframe.contentWindow.print();
-                        setTimeout(() => document.body.removeChild(iframe), 2000);
-                    }, 2000);
                 }
-            } catch (err) { console.error(err); showMessage("Hata", "Yazdırma başarısız."); } finally { toggleLoading(false); get('hiddenQrContainer').innerHTML = ''; }
+            } catch (err) { showMessage("Hata", "Yazdırma başarısız."); } finally { toggleLoading(false); get('hiddenQrContainer').innerHTML = ''; }
         }
 
-        // --- TASLAK MANTIĞI ---
         function saveCurrentToDraft() {
             if (currentSopPath === null && (points.length > 0 || get('sopTitleInput').value.trim() !== '')) {
                 newSopDraft = {
@@ -848,23 +764,17 @@
         function loadDraft() {
             if (!newSopDraft) return;
             resetApp();
-            points = newSopDraft.points;
-            arrows = newSopDraft.arrows;
-            warnings = newSopDraft.warnings;
-            get('sopTitleInput').value = newSopDraft.title;
-            get('sopSubtitleInput').value = newSopDraft.subtitle;
+            points = newSopDraft.points; arrows = newSopDraft.arrows; warnings = newSopDraft.warnings;
+            get('sopTitleInput').value = newSopDraft.title; get('sopSubtitleInput').value = newSopDraft.subtitle;
             activeProject = newSopDraft.subtitle;
             if(newSopDraft.logo) { get('logoPreview').src = newSopDraft.logo; get('logoPreview').classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }
-            
             toggleLoading(true, "Taslak yükleniyor...");
             (async () => {
-                const sImages = newSopDraft.images || [null];
-                images = [];
+                const sImages = newSopDraft.images || [null]; images = [];
                 for(let i=0; i<sImages.length; i++) {
                     if(sImages[i]) {
                         const img = new Image(); img.src = sImages[i];
-                        await new Promise(r => img.onload = r);
-                        images.push(img);
+                        await new Promise(r => img.onload = r); images.push(img);
                     } else { images.push(null); }
                 }
                 renderAll(); renderWarnings();
@@ -875,10 +785,8 @@
 
         function deleteDraft() {
             if (!newSopDraft) return;
-            showConfirm("Taslağı Sil", "Mevcut taslak verileri kalıcı olarak silinecektir. Onaylıyor musunuz?", function() {
-                newSopDraft = null;
-                renderDraftNotice();
-                showMessage("Bilgi", "Taslak silindi.", "success");
+            showConfirm("Taslağı Sil", "Mevcut taslak verileri silinecektir. Onaylıyor musunuz?", function() {
+                newSopDraft = null; renderDraftNotice(); showMessage("Bilgi", "Taslak silindi.", "success");
             });
         }
 
@@ -887,11 +795,11 @@
             if (newSopDraft) {
                 container.innerHTML = `
                     <div class="flex items-center gap-2 mb-3 animate-in slide-in-from-left duration-300">
-                        <div class="draft-notice" onclick="loadDraft()" title="Taslağı Yükle">
+                        <div class="draft-notice" onclick="loadDraft()">
                             <i data-lucide="edit-3" class="w-4 h-4"></i>
                             <span class="truncate">Devam Eden Taslak</span>
                         </div>
-                        <button onclick="deleteDraft()" class="draft-delete-btn" title="Taslağı Sil">
+                        <button onclick="deleteDraft()" class="draft-delete-btn">
                             <i data-lucide="trash-2" class="w-5 h-5"></i>
                         </button>
                     </div>
@@ -903,7 +811,7 @@
         function autoResizeStepArea(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
         function clearCurrentImage() {
-            showConfirm("Görseli Kaldır", "Bu görseli ve üzerindeki tüm işaretçileri silmek istediğinize emin misiniz?", function() {
+            showConfirm("Görseli Kaldır", "Bu görseli ve üzerindeki işaretçileri silmek istiyor musunuz?", function() {
                 images[activeIdx] = null;
                 points = points.filter(p => p.imgIdx !== activeIdx || p.isManual);
                 arrows = arrows.filter(a => a.imgIdx !== activeIdx);
@@ -916,8 +824,8 @@
             showConfirm("Sekmeyi Sil", `Sekme ${index + 1} silinecek. Onaylıyor musunuz?`, function() {
                 points = points.filter(p => p.imgIdx !== index || p.isManual);
                 arrows = arrows.filter(a => a.imgIdx !== index);
-                points.forEach(function(p) { if(!p.isManual && p.imgIdx > index) p.imgIdx--; });
-                arrows.forEach(function(a) { if(a.imgIdx > index) a.imgIdx--; });
+                points.forEach(p => { if(!p.isManual && p.imgIdx > index) p.imgIdx--; });
+                arrows.forEach(a => { if(a.imgIdx > index) a.imgIdx--; });
                 images.splice(index, 1);
                 if (activeIdx >= images.length) activeIdx = images.length - 1;
                 renderAll();
@@ -927,7 +835,7 @@
         function renderTabs() {
             const container = get('tabsContainer'); if(!container) return;
             container.innerHTML = '';
-            images.forEach(function(img, i) {
+            images.forEach((img, i) => {
                 const btn = document.createElement('button');
                 btn.className = `tab-btn relative px-4 py-3 text-xs font-black uppercase tracking-widest whitespace-nowrap shrink-0 ${activeIdx === i ? 'active' : ''}`;
                 btn.innerHTML = `<span>Görsel ${i + 1}</span><span class="ml-2 p-1 hover:bg-red-50 hover:text-white rounded-full transition-colors text-[10px] leading-none" onclick="event.stopPropagation(); removeTab(${i})">✕</span>`;
@@ -946,7 +854,6 @@
             get('addNewProjectBtn').onclick = function() {
                 get('newProjectNameInput').value = ""; get('newProjectUserInput').value = ""; get('newProjectPassInput').value = "";
                 get('newProjectModal').classList.remove('hidden'); get('newProjectModal').classList.add('flex');
-                lucide.createIcons();
             };
             get('saveNewProjectBtn').onclick = async function() {
                 const name = get('newProjectNameInput').value.trim().toUpperCase();
@@ -958,9 +865,10 @@
                     toggleLoading(false); openEditorForNewSop(); fetchArchive();
                 } else { showMessage("Eksik Bilgi", "Lütfen tüm alanları doldurun."); }
             };
-            get('viewSopBtn').onclick = function() { get('gatewayScreen').style.display = 'none'; if(pendingPath) showModeSelection(pendingPath); };
-            get('editSopBtn').onclick = function() { loginPurpose = 'system'; get('loginHeading').innerText = "Admin Girişi"; get('gatewayScreen').style.display = 'none'; get('loginScreen').style.display = 'flex'; get('backToGateway').classList.remove('hidden'); };
-            get('backToGateway').onclick = function() { get('loginScreen').style.display = 'none'; if (loginPurpose === 'engineer_edit') get('modeSelectionScreen').style.display = 'flex'; else get('gatewayScreen').style.display = 'flex'; };
+            get('backToGateway').onclick = function() { 
+                get('loginScreen').style.display = 'none'; 
+                get('modeSelectionScreen').style.display = 'flex'; 
+            };
             get('loginForm').onsubmit = function(e) {
                 e.preventDefault();
                 const uInp = get('usernameInput').value; const pInp = get('passwordInput').value;
@@ -990,12 +898,11 @@
             get('uploadArea').onclick = function() { get('fileInput').click(); };
             get('logoUploadBox').onclick = function() { get('logoInput').click(); };
             get('exportSupabaseBtn').onclick = function() { handleSave(); };
-            
             const tools = { toolRed:'red', toolBlue:'blue', toolGreen:'green', toolOrange:'orange', toolPurple:'purple', toolArrow:'arrow', toolOperator:'operator' };
-            Object.entries(tools).forEach(function([id, m]) {
+            Object.entries(tools).forEach(([id, m]) => {
                 get(id).onclick = function() {
                     currentMode = m; if(['red','blue','green','orange', 'purple'].includes(m)) lastColor = m;
-                    document.querySelectorAll('.tool-btn').forEach(function(b) { b.classList.remove('active'); }); get(id).classList.add('active');
+                    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active')); get(id).classList.add('active');
                 };
             });
             get('addManualBtn').onclick = function() { points.push({ type: 'blue', isManual: true, description: '', imgIdx: -1 }); renderAll(); };
@@ -1005,16 +912,31 @@
         function loginSuccess(role, project) { 
             currentUser = { role: role, project: project }; 
             if (role === 'admin') localStorage.setItem('isEldor', 'true'); 
-            get('loginScreen').style.display = 'none'; get('gatewayScreen').style.display = 'none'; 
-            const m = get('mainApp'); m.classList.remove('hidden'); setTimeout(function() { m.style.opacity = '1'; }, 50); 
+            get('loginScreen').style.display = 'none'; 
+            const m = get('mainApp'); m.classList.remove('hidden'); setTimeout(() => m.style.opacity = '1', 50); 
             if (role === 'admin') get('addNewProjectBtn').classList.remove('hidden'); 
             if (role === 'project') selectProject(project); 
             fetchArchive(); 
         }
 
         function logout() { localStorage.removeItem('isEldor'); window.location.reload(); }
-        function showModeSelection(path) { pendingPath = path; get('modeSelectionScreen').style.display = 'flex'; }
-        function handleModeChoice(mode) { get('modeSelectionScreen').style.display = 'none'; if (mode === 'operator') loadOperatorSop(pendingPath); else { loginPurpose = 'engineer_edit'; get('loginHeading').innerText = "Mühendis Girişi"; get('loginError').classList.add('hidden'); get('backToGateway').classList.remove('hidden'); get('loginScreen').style.display = 'flex'; } }
+        
+        function showModeSelection(path) { 
+            pendingPath = path; 
+            get('modeSelectionScreen').style.display = 'flex'; 
+        }
+
+        function handleModeChoice(mode) { 
+            get('modeSelectionScreen').style.display = 'none'; 
+            if (mode === 'operator') loadOperatorSop(pendingPath); 
+            else { 
+                loginPurpose = 'engineer_edit'; 
+                get('loginHeading').innerText = "Mühendis Girişi"; 
+                get('loginError').classList.add('hidden'); 
+                get('backToGateway').classList.remove('hidden'); 
+                get('loginScreen').style.display = 'flex'; 
+            } 
+        }
         
         async function fetchArchive() {
             try {
@@ -1029,15 +951,15 @@
                     header.innerHTML = `
                         <span class="truncate font-black">${projName}</span>
                         <div class="flex items-center gap-1">
-                            <button onclick="event.stopPropagation(); printAllProjectQrs('${projName}')" class="p-1.5 hover:bg-blue-100 rounded-lg text-blue-600" title="Toplu Yazdır"><i data-lucide="printer" class="w-4 h-4"></i></button>
-                            <button onclick="event.stopPropagation(); downloadAllProjectQrs('${projName}')" class="p-1.5 hover:bg-orange-100 rounded-lg text-orange-600" title="Toplu İndir"><i data-lucide="folder-down" class="w-4 h-4"></i></button>
-                            <button onclick="event.stopPropagation(); selectProject('${projName}'); openEditorForNewSop();" class="p-1.5 hover:bg-blue-100 rounded-lg text-[#000080]" title="Yeni Talimat"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                            <button onclick="event.stopPropagation(); deleteWholeProject('${projName}')" class="p-1.5 hover:bg-red-100 rounded-lg text-red-500" title="Projeyi Sil"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            <button onclick="event.stopPropagation(); printAllProjectQrs('${projName}')" class="p-1.5 hover:bg-blue-100 rounded-lg text-blue-600"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                            <button onclick="event.stopPropagation(); downloadAllProjectQrs('${projName}')" class="p-1.5 hover:bg-orange-100 rounded-lg text-orange-600"><i data-lucide="folder-down" class="w-4 h-4"></i></button>
+                            <button onclick="event.stopPropagation(); selectProject('${projName}'); openEditorForNewSop();" class="p-1.5 hover:bg-blue-100 rounded-lg text-[#000080]"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                            <button onclick="event.stopPropagation(); deleteWholeProject('${projName}')" class="p-1.5 hover:bg-red-100 rounded-lg text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             <i data-lucide="chevron-down" class="chevron w-4 h-4 ml-1"></i>
                         </div>`;
                     const content = document.createElement('div');
                     content.className = `folder-content ${activeProject === projName ? '' : 'hidden'}`;
-                    header.onclick = function() { selectProject(projName); content.classList.toggle('hidden'); header.classList.toggle('collapsed'); };
+                    header.onclick = function() { selectProject(projName); content.classList.toggle('hidden'); };
                     const { data: files } = await supabaseClient.storage.from(BUCKET_NAME).list(`public/data/${projName}`);
                     const jsonFiles = (files || []).filter(f => f.name.endsWith('.json'));
                     for (const f of jsonFiles) {
@@ -1066,7 +988,7 @@
         }
 
         async function deleteWholeProject(projName) {
-            showConfirm("Projeyi Sil", `"${projName}" projesini ve TÜM dökümanlarını silmek istediğinize emin misiniz?`, async function() {
+            showConfirm("Projeyi Sil", `"${projName}" projesini silmek istediğinize emin misiniz?`, async function() {
                 toggleLoading(true, "Siliniyor...");
                 try {
                     const { data: files } = await supabaseClient.storage.from(BUCKET_NAME).list(`public/data/${projName}`);
@@ -1099,7 +1021,7 @@
                 } else { warnArea.classList.add('hidden'); }
                 renderOperatorSlider(); renderOperatorSteps();
                 get('operatorView').style.display = 'flex'; lucide.createIcons();
-            } catch(e) { console.error(e); showMessage("Hata", "Yükleme başarısız."); } finally { toggleLoading(false); }
+            } catch(e) { showMessage("Hata", "Yükleme başarısız."); } finally { toggleLoading(false); }
         }
 
         function renderOperatorSlider() {
@@ -1122,7 +1044,7 @@
             });
             const arrowCanvas = document.createElement('canvas'); arrowCanvas.className = "absolute inset-0 pointer-events-none"; div.appendChild(arrowCanvas);
             media.appendChild(div);
-            setTimeout(function() {
+            setTimeout(() => {
                 arrowCanvas.width = img.clientWidth; arrowCanvas.height = img.clientHeight; const oCtx = arrowCanvas.getContext('2d');
                 const relW = img.clientWidth / 100; const relH = img.clientHeight / 100;
                 (opCurrentSop.arrows || []).filter(a => a.imgIdx === opActiveIdx).forEach(a => { drawArrow(oCtx, a.x1 * relW, a.y1 * relH, a.x2 * relW, a.y2 * relH, a.color); });
@@ -1132,8 +1054,7 @@
         function renderOperatorSteps() {
             const st = get('opStepsList'); st.innerHTML = ''; let sc = 0;
             opCurrentSop.points.forEach(p => {
-                const isStep = p.type === 'red' || p.isManual;
-                if(isStep) { sc++; const card = document.createElement('div'); card.className = "step-card bg-white p-6 rounded-2xl flex items-center gap-6 shadow-sm border border-slate-100"; card.innerHTML = `<div class="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-black shrink-0 shadow-lg">${sc}</div><p class="text-base font-bold text-slate-700 flex-grow">${p.description}</p>`; st.appendChild(card); }
+                if(p.type === 'red' || p.isManual) { sc++; const card = document.createElement('div'); card.className = "step-card bg-white p-6 rounded-2xl flex items-center gap-6 shadow-sm border border-slate-100"; card.innerHTML = `<div class="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-black shrink-0 shadow-lg">${sc}</div><p class="text-base font-bold text-slate-700 flex-grow">${p.description}</p>`; st.appendChild(card); }
             });
             lucide.createIcons();
         }
@@ -1149,16 +1070,12 @@
         }
 
         async function loadSopData(path) {
-            if (currentSopPath === null && (points.length > 0 || get('sopTitleInput').value.trim() !== '')) {
-                saveCurrentToDraft();
-            }
-
+            if (currentSopPath === null && (points.length > 0 || get('sopTitleInput').value.trim() !== '')) { saveCurrentToDraft(); }
             toggleLoading(true, "Yükleniyor...");
             try {
                 const cleanPath = path.replace(/^\/+/, ''); const { data } = await supabaseClient.storage.from(BUCKET_NAME).download(cleanPath);
                 const s = JSON.parse(await data.text());
-                resetApp(); 
-                currentSopPath = cleanPath; 
+                resetApp(); currentSopPath = cleanPath; 
                 points = s.points; arrows = s.arrows; warnings = s.warnings;
                 get('sopTitleInput').value = s.title; get('sopSubtitleInput').value = s.subtitle;
                 selectProject(s.subtitle);
@@ -1172,16 +1089,14 @@
                 }
                 renderAll(); renderWarnings();
                 get('projectEmptyState').classList.add('hidden'); get('sopEditor').classList.remove('hidden');
-            } catch(e) { console.error(e); showMessage("Hata", "İşlem başarısız."); } finally { toggleLoading(false); }
+            } catch(e) { showMessage("Hata", "İşlem başarısız."); } finally { toggleLoading(false); }
         }
 
-        function selectProject(projId) { activeProject = projId; get('activeProjectTitle').innerText = projId; get('startNewSopBtn').classList.remove('hidden'); get('projectEmptyState').classList.remove('hidden'); get('projectEmptyState').classList.add('flex'); get('sopEditor').classList.add('hidden'); }
+        function selectProject(projId) { activeProject = projId; get('activeProjectTitle').innerText = projId; get('startNewSopBtn').classList.remove('hidden'); get('projectEmptyState').classList.remove('hidden'); get('sopEditor').classList.add('hidden'); }
         
         function openEditorForNewSop() { 
             if (newSopDraft) {
-                showConfirm("Taslak Var", "Mevcut bir taslağınız bulunuyor. Ona devam etmek ister misiniz?", function() {
-                    loadDraft();
-                }, 'orange');
+                showConfirm("Taslak Var", "Mevcut bir taslağınız bulunuyor. Ona devam etmek ister misiniz?", function() { loadDraft(); }, 'orange');
                 return;
             }
             resetApp(); currentSopPath = null;
@@ -1190,9 +1105,8 @@
 
         function closeEditor() { 
             if (currentSopPath === null && (points.length > 0 || get('sopTitleInput').value.trim() !== '')) {
-                showConfirm("Kaydedilmedi", "Çalışmanız henüz kaydedilmedi. Taslak olarak saklamak ister misiniz?", function() {
-                    saveCurrentToDraft();
-                    get('sopEditor').classList.add('hidden'); get('projectEmptyState').classList.remove('hidden');
+                showConfirm("Kaydedilmedi", "Çalışmanız kaydedilmedi. Taslak olarak saklamak ister misiniz?", function() {
+                    saveCurrentToDraft(); get('sopEditor').classList.add('hidden'); get('projectEmptyState').classList.remove('hidden');
                 });
             } else {
                 get('sopEditor').classList.add('hidden'); get('projectEmptyState').classList.remove('hidden'); currentSopPath = null; 
@@ -1220,14 +1134,14 @@
                 if (p.imgIdx === activeIdx && !p.isManual) { 
                     const m = document.createElement('div'); m.className = p.type === 'operator' ? 'marker-operator' : `marker marker-${p.type}`; 
                     m.style.left = p.px + '%'; m.style.top = p.py + '%'; m.innerHTML = p.type === 'operator' ? 'OPERATÖR' : (p.type === 'red' ? sc : ''); 
-                    m.onclick = function(e) { e.stopPropagation(); points.splice(i, 1); renderAll(); }; overlay.appendChild(m); 
+                    m.onclick = (e) => { e.stopPropagation(); points.splice(i, 1); renderAll(); }; overlay.appendChild(m); 
                 } 
                 if (isStep) { 
-                    const row = document.createElement('div'); row.className = "flex items-start gap-3 p-4 bg-slate-50 rounded-2xl mb-3 group border border-slate-100 hover:border-slate-300 transition-colors"; 
+                    const row = document.createElement('div'); row.className = "flex items-start gap-3 p-4 bg-slate-50 rounded-2xl mb-3 border border-slate-100"; 
                     const colorClass = p.isManual ? 'bg-blue-600' : 'bg-red-600';
-                    row.innerHTML = `<span class="w-6 h-6 rounded-lg ${colorClass} text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md mt-1">${sc}</span>
+                    row.innerHTML = `<span class="w-6 h-6 rounded-lg ${colorClass} text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-1">${sc}</span>
                                     <textarea class="step-description-area flex-grow" oninput="points[${i}].description=this.value; autoResizeStepArea(this)" placeholder="Adım açıklaması...">${p.description}</textarea>
-                                    <button onclick="points.splice(${i},1); renderAll();" class="text-red-400 hover:text-red-600 transition-all p-1 mt-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`; 
+                                    <button onclick="points.splice(${i},1); renderAll();" class="text-red-400 p-1 mt-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`; 
                     table.appendChild(row); setTimeout(() => { const ta = row.querySelector('textarea'); if(ta) autoResizeStepArea(ta); }, 0);
                 } 
             });
@@ -1236,8 +1150,8 @@
 
         function getHexColor(c) { const colors = { blue: '#3b82f6', green: '#22c55e', orange: '#f97316', red: '#ef4444', purple: '#a855f7' }; return colors[c] || colors.red; }
         function drawArrow(c, fx, fy, tx, ty, color) { const headlen = 22; const angle = Math.atan2(ty - fy, tx - fx); c.beginPath(); c.strokeStyle = color; c.lineWidth = 8; c.lineCap = "round"; c.moveTo(fx, fy); c.lineTo(tx, ty); c.stroke(); c.beginPath(); c.fillStyle = color; c.moveTo(tx, ty); c.lineTo(tx - headlen * Math.cos(angle - Math.PI/6), ty - headlen * Math.sin(angle - Math.PI/6)); c.lineTo(tx - headlen * Math.cos(angle + Math.PI/6), ty - headlen * Math.sin(angle + Math.PI/6)); c.closePath(); c.fill(); }
-        function handleFileChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(ev) { const img = new Image(); img.onload = function() { images[activeIdx] = img; renderAll(); }; img.src = ev.target.result; }; r.readAsDataURL(f); }
-        function handleLogoChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(ev) { const p = get('logoPreview'); p.src = ev.target.result; p.classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }; r.readAsDataURL(f); }
+        function handleFileChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const img = new Image(); img.onload = () => { images[activeIdx] = img; renderAll(); }; img.src = ev.target.result; }; r.readAsDataURL(f); }
+        function handleLogoChange(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const p = get('logoPreview'); p.src = ev.target.result; p.classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }; r.readAsDataURL(f); }
         function toggleLoading(s, t) { const l = get('loading'); if(l) { get('loadingText').innerText = t; if(s) l.classList.add('active'); else l.classList.remove('active'); } }
         
         async function handleSave() { 
@@ -1245,16 +1159,12 @@
             if(!title) return showMessage("Eksik Bilgi", "Lütfen bir başlık girin."); 
             toggleLoading(true, "Kaydediliyor..."); 
             try { 
-                let targetPath;
-                if (currentSopPath) { targetPath = currentSopPath; }
-                else { const uniqueId = Date.now(); targetPath = `public/data/${activeProject}/SOP_${uniqueId}.json`; }
+                let targetPath = currentSopPath || `public/data/${activeProject}/SOP_${Date.now()}.json`;
                 const state = { title: title, subtitle: activeProject, points: points, arrows: arrows, warnings: warnings, logo: get('logoPreview').src || null, images: images.map(img => img ? (img.src || img) : null) }; 
-                const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(targetPath, new Blob([JSON.stringify(state)], { type: 'application/json' }), { upsert: true, contentType: 'application/json' }); 
-                if (error) throw error;
-                
+                await supabaseClient.storage.from(BUCKET_NAME).upload(targetPath, new Blob([JSON.stringify(state)], { type: 'application/json' }), { upsert: true, contentType: 'application/json' }); 
                 newSopDraft = null; renderDraftNotice();
                 currentSopPath = targetPath; toggleLoading(false); showQr(targetPath, title); fetchArchive(); 
-            } catch (e) { console.error("Kayıt Hatası:", e); showMessage("Hata", e.message); toggleLoading(false); } 
+            } catch (e) { showMessage("Hata", e.message); toggleLoading(false); } 
         }
 
         function resetApp() { 
@@ -1263,7 +1173,7 @@
             currentSopPath = null; renderAll(); renderWarnings(); 
         }
 
-        function renderWarnings() { const b = get('warningsContainer'); b.innerHTML = ''; warnings.forEach((w, i) => { const d = document.createElement('div'); d.className = "flex gap-3 bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm"; d.innerHTML = `<textarea class="flex-grow bg-transparent text-[11px] text-red-800 font-bold outline-none resize-none" rows="2" placeholder="Uyarı..." oninput="warnings[${i}].text=this.value">${w.text}</textarea><button onclick="warnings.splice(${i},1); renderWarnings();" class="text-red-300 hover:text-red-500 font-black text-xl">×</button>`; b.appendChild(d); }); }
+        function renderWarnings() { const b = get('warningsContainer'); b.innerHTML = ''; warnings.forEach((w, i) => { const d = document.createElement('div'); d.className = "flex gap-3 bg-red-50 p-4 rounded-2xl border border-red-100"; d.innerHTML = `<textarea class="flex-grow bg-transparent text-[11px] text-red-800 font-bold outline-none resize-none" rows="2" oninput="warnings[${i}].text=this.value">${w.text}</textarea><button onclick="warnings.splice(${i},1); renderWarnings();" class="text-red-300 hover:text-red-500 text-xl">×</button>`; b.appendChild(d); }); }
         function exitOperatorView() { get('operatorView').style.display = 'none'; }
     </script>
 </body>
