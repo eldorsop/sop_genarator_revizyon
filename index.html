@@ -264,6 +264,24 @@
             cursor: pointer;
         }
         .draft-delete-btn:hover { background: #b91c1c; transform: scale(1.05); }
+
+        /* Modal Logo Preview Style */
+        .modal-logo-box {
+            width: 80px;
+            height: 80px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            background: #f8fafc;
+            margin: 0 auto;
+            transition: all 0.2s;
+        }
+        .modal-logo-box:hover { border-color: var(--eldor-navy); background: #f1f5f9; }
+        .modal-logo-box img { width: 100%; height: 100%; object-fit: contain; padding: 10px; }
     </style>
 </head>
 <body>
@@ -289,14 +307,27 @@
 
     <!-- New Project Modal -->
     <div id="newProjectModal" class="fixed inset-0 z-[11000] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-        <div class="bg-white rounded-[32px] p-10 max-sm w-full shadow-2xl text-center space-y-6 animate-in zoom-in duration-300">
-            <div class="w-20 h-20 bg-blue-50 rounded-full mx-auto flex items-center justify-center text-[#000080]">
-                <i data-lucide="folder-plus" class="w-10 h-10"></i>
+        <div class="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl text-center space-y-6 animate-in zoom-in duration-300">
+            <div class="w-16 h-16 bg-blue-50 rounded-full mx-auto flex items-center justify-center text-[#000080]">
+                <i data-lucide="folder-plus" class="w-8 h-8"></i>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 uppercase">Yeni Proje Oluştur</h3>
-                <p class="text-slate-500 text-xs mt-1 font-medium">Proje ismini ve yetkili giriş bilgilerini tanımlayın.</p>
+                <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight">Yeni Proje Oluştur</h3>
+                <p class="text-slate-400 text-[10px] mt-1 font-bold uppercase">Proje detaylarını ve varsayılan logosunu tanımlayın.</p>
             </div>
+            
+            <div class="space-y-2">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">PROJE LOGOSU (OPSİYONEL)</p>
+                <div id="newProjectLogoBox" class="modal-logo-box group">
+                    <img id="newProjectLogoPreview" class="hidden">
+                    <div id="newProjectLogoPlaceholder" class="text-slate-300 flex flex-col items-center gap-1">
+                        <i data-lucide="image" class="w-5 h-5"></i>
+                        <span class="text-[8px] font-black uppercase">Logo Seç</span>
+                    </div>
+                    <input type="file" id="newProjectLogoInput" class="hidden" accept="image/*">
+                </div>
+            </div>
+
             <div class="space-y-3 text-left">
                 <input type="text" id="newProjectNameInput" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold uppercase text-center" placeholder="PROJE ADI">
                 <input type="text" id="newProjectUserInput" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-center" placeholder="KULLANICI ADI">
@@ -305,6 +336,50 @@
             <div class="flex gap-3 pt-2">
                 <button id="saveNewProjectBtn" class="flex-grow py-4 bg-[#000080] text-white rounded-2xl font-black shadow-lg hover:bg-blue-900 transition-all uppercase text-xs">Projeyi Kaydet</button>
                 <button onclick="get('newProjectModal').classList.add('hidden'); get('newProjectModal').classList.remove('flex');" class="flex-grow py-4 bg-slate-100 text-slate-400 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-xs">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Project Auth Modal (UPDATED WITH NAME) -->
+    <div id="editProjectAuthModal" class="fixed inset-0 z-[11000] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+        <div class="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl text-center space-y-6 animate-in zoom-in duration-300">
+            <div class="w-16 h-16 bg-amber-50 rounded-full mx-auto flex items-center justify-center text-amber-600">
+                <i data-lucide="key-round" class="w-8 h-8"></i>
+            </div>
+            <div>
+                <h3 id="editProjectAuthTitle" class="text-xl font-black text-slate-900 uppercase tracking-tight">PROJE BİLGİLERİ</h3>
+                <p class="text-slate-400 text-[10px] mt-1 font-bold uppercase tracking-widest text-center">Bu proje altındaki tüm SOP'ler için geçerlidir.</p>
+            </div>
+
+            <div class="space-y-2">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">PROJE LOGOSU</p>
+                <div id="editProjectLogoBox" class="modal-logo-box group">
+                    <img id="editProjectLogoPreview" class="hidden">
+                    <div id="editProjectLogoPlaceholder" class="text-slate-300 flex flex-col items-center gap-1">
+                        <i data-lucide="image" class="w-5 h-5"></i>
+                        <span class="text-[8px] font-black uppercase">Logo Seç</span>
+                    </div>
+                    <input type="file" id="editProjectLogoInput" class="hidden" accept="image/*">
+                </div>
+            </div>
+
+            <div class="space-y-3 text-left">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">PROJE ADI</label>
+                    <input type="text" id="editProjectNameInput" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-center uppercase" placeholder="PROJE ADI">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Kullanıcı Adı</label>
+                    <input type="text" id="editProjectUserInput" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-center" placeholder="KULLANICI ADI">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-2 tracking-widest">Şifre</label>
+                    <input type="text" id="editProjectPassInput" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-center" placeholder="ŞİFRE">
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button id="saveEditedProjectAuthBtn" class="flex-grow py-4 bg-amber-600 text-white rounded-2xl font-black shadow-lg hover:bg-amber-700 transition-all uppercase text-xs tracking-widest">DEĞİŞTİR</button>
+                <button onclick="get('editProjectAuthModal').classList.add('hidden'); get('editProjectAuthModal').classList.remove('flex');" class="flex-grow py-4 bg-slate-100 text-slate-400 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-xs tracking-widest">İptal</button>
             </div>
         </div>
     </div>
@@ -545,6 +620,7 @@
         let pendingPath = null; 
         let loginPurpose = 'system'; 
         let currentSopPath = null; 
+        let currentlyEditingProject = null; 
         
         let newSopDraft = null;
         let opCurrentSop = null;
@@ -561,11 +637,9 @@
             const viewParam = params.get('view'); 
             
             if (viewParam) {
-                // QR Kod okutulduğunda doğrudan Operatör/Mühendis seçim ekranına yönlendir
                 pendingPath = viewParam.replace(/^\/+/, ''); 
                 showModeSelection(pendingPath);
             } else {
-                // QR yoksa standart giriş ekranını göster
                 const isAdmin = localStorage.getItem('isEldor') === 'true';
                 if (isAdmin) loginSuccess('admin', null);
                 else get('loginScreen').style.display = 'flex';
@@ -767,7 +841,16 @@
             points = newSopDraft.points; arrows = newSopDraft.arrows; warnings = newSopDraft.warnings;
             get('sopTitleInput').value = newSopDraft.title; get('sopSubtitleInput').value = newSopDraft.subtitle;
             activeProject = newSopDraft.subtitle;
-            if(newSopDraft.logo) { get('logoPreview').src = newSopDraft.logo; get('logoPreview').classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }
+            
+            const projConf = dynamicAuth[activeProject.toUpperCase()];
+            const projLogo = projConf?.logo;
+            const projName = projConf?.name || activeProject;
+            
+            get('sopSubtitleInput').value = projName;
+            
+            if(projLogo) { get('logoPreview').src = projLogo; get('logoPreview').classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }
+            else if(newSopDraft.logo) { get('logoPreview').src = newSopDraft.logo; get('logoPreview').classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }
+            
             toggleLoading(true, "Taslak yükleniyor...");
             (async () => {
                 const sImages = newSopDraft.images || [null]; images = [];
@@ -850,21 +933,101 @@
             lucide.createIcons();
         }
 
+        // --- YETKİ VE PROJE BİLGİLERİ DÜZENLEME FONKSİYONLARI ---
+        function openEditProjectAuth(projId) {
+            currentlyEditingProject = projId; // Bu saklanması gereken klasör ID'sidir
+            const auth = dynamicAuth[projId.toUpperCase()] || { user: '', pass: '', logo: null, name: '' };
+            
+            get('editProjectNameInput').value = auth.name || projId;
+            get('editProjectUserInput').value = auth.user;
+            get('editProjectPassInput').value = auth.pass;
+            get('editProjectAuthTitle').innerText = `${projId} BİLGİLERİ`;
+            
+            const p = get('editProjectLogoPreview');
+            const h = get('editProjectLogoPlaceholder');
+            if(auth.logo) { p.src = auth.logo; p.classList.remove('hidden'); h.classList.add('hidden'); }
+            else { p.src = ""; p.classList.add('hidden'); h.classList.remove('hidden'); }
+
+            get('editProjectAuthModal').classList.remove('hidden');
+            get('editProjectAuthModal').classList.add('flex');
+            lucide.createIcons();
+        }
+
+        async function saveEditedProjectAuth() {
+            const name = get('editProjectNameInput').value.trim().toUpperCase();
+            const user = get('editProjectUserInput').value.trim();
+            const pass = get('editProjectPassInput').value.trim();
+            const logo = get('editProjectLogoPreview').src || null;
+            
+            if (name && user && pass && currentlyEditingProject) {
+                toggleLoading(true, "Güncelleniyor...");
+                
+                // dynamicAuth objesini güncelle
+                dynamicAuth[currentlyEditingProject.toUpperCase()] = { 
+                    user: user, 
+                    pass: pass, 
+                    logo: logo, 
+                    name: name 
+                };
+                
+                await saveDynamicAuthToSupabase();
+                
+                // Aktif görünümü güncelle
+                if(activeProject === currentlyEditingProject) {
+                    get('activeProjectTitle').innerText = name;
+                    if(!get('sopEditor').classList.contains('hidden')) {
+                        get('sopSubtitleInput').value = name;
+                        if(logo) { get('logoPreview').src = logo; get('logoPreview').classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }
+                    }
+                }
+
+                get('editProjectAuthModal').classList.add('hidden');
+                get('editProjectAuthModal').classList.remove('flex');
+                toggleLoading(false);
+                fetchArchive(); // Sidebar'ı yenile
+                showMessage("Başarılı", "Proje bilgileri güncellendi. Tüm görünürlükler yenilendi.", "success");
+            } else { showMessage("Eksik Bilgi", "Lütfen tüm alanları doldurun."); }
+        }
+
+        function handleModalLogoChange(e, previewId, placeholderId) {
+            const f = e.target.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = (ev) => {
+                const p = get(previewId);
+                p.src = ev.target.result;
+                p.classList.remove('hidden');
+                get(placeholderId).classList.add('hidden');
+            };
+            r.readAsDataURL(f);
+        }
+
         function attachListeners() {
+            get('newProjectLogoBox').onclick = () => get('newProjectLogoInput').click();
+            get('newProjectLogoInput').onchange = (e) => handleModalLogoChange(e, 'newProjectLogoPreview', 'newProjectLogoPlaceholder');
+            
+            get('editProjectLogoBox').onclick = () => get('editProjectLogoInput').click();
+            get('editProjectLogoInput').onchange = (e) => handleModalLogoChange(e, 'editProjectLogoPreview', 'editProjectLogoPlaceholder');
+
             get('addNewProjectBtn').onclick = function() {
                 get('newProjectNameInput').value = ""; get('newProjectUserInput').value = ""; get('newProjectPassInput').value = "";
+                get('newProjectLogoPreview').src = ""; get('newProjectLogoPreview').classList.add('hidden');
+                get('newProjectLogoPlaceholder').classList.remove('hidden');
                 get('newProjectModal').classList.remove('hidden'); get('newProjectModal').classList.add('flex');
             };
             get('saveNewProjectBtn').onclick = async function() {
                 const name = get('newProjectNameInput').value.trim().toUpperCase();
                 const user = get('newProjectUserInput').value.trim(); const pass = get('newProjectPassInput').value.trim();
+                const logo = get('newProjectLogoPreview').src || null;
                 if (name && user && pass) {
                     toggleLoading(true, "Proje oluşturuluyor...");
-                    dynamicAuth[name] = { user: user, pass: pass }; await saveDynamicAuthToSupabase();
+                    // Yeni projeyi displayName ile kaydet
+                    dynamicAuth[name] = { user: user, pass: pass, logo: logo, name: name }; 
+                    await saveDynamicAuthToSupabase();
                     activeProject = name; get('newProjectModal').classList.add('hidden'); get('newProjectModal').classList.remove('flex');
                     toggleLoading(false); openEditorForNewSop(); fetchArchive();
                 } else { showMessage("Eksik Bilgi", "Lütfen tüm alanları doldurun."); }
             };
+            get('saveEditedProjectAuthBtn').onclick = saveEditedProjectAuth;
             get('backToGateway').onclick = function() { 
                 get('loginScreen').style.display = 'none'; 
                 get('modeSelectionScreen').style.display = 'flex'; 
@@ -945,25 +1108,33 @@
                 list.innerHTML = '';
                 const sortedFolders = (folders || []).sort((a,b) => a.name.localeCompare(b.name));
                 for (const folder of sortedFolders) {
-                    const projName = folder.name; if (currentUser.role !== 'admin' && projName !== currentUser.project) continue;
+                    const projId = folder.name; if (currentUser.role !== 'admin' && projId !== currentUser.project) continue;
+                    
+                    const projAuth = dynamicAuth[projId.toUpperCase()] || {};
+                    const displayProjectName = projAuth.name || projId; // Görünen ismi al
+                    
+                    const editAuthHtml = currentUser.role === 'admin' ? 
+                        `<button onclick="event.stopPropagation(); openEditProjectAuth('${projId}')" class="p-1.5 hover:bg-amber-100 rounded-lg text-amber-600" title="Yetki/Bilgi Düzenle"><i data-lucide="key-round" class="w-4 h-4"></i></button>` : '';
+
                     const header = document.createElement('div');
-                    header.className = `project-group-header ${activeProject === projName ? 'active' : ''}`;
+                    header.className = `project-group-header ${activeProject === projId ? 'active' : ''}`;
                     header.innerHTML = `
-                        <span class="truncate font-black">${projName}</span>
+                        <span class="truncate font-black">${displayProjectName}</span>
                         <div class="flex items-center gap-1">
-                            <button onclick="event.stopPropagation(); printAllProjectQrs('${projName}')" class="p-1.5 hover:bg-blue-100 rounded-lg text-blue-600"><i data-lucide="printer" class="w-4 h-4"></i></button>
-                            <button onclick="event.stopPropagation(); downloadAllProjectQrs('${projName}')" class="p-1.5 hover:bg-orange-100 rounded-lg text-orange-600"><i data-lucide="folder-down" class="w-4 h-4"></i></button>
-                            <button onclick="event.stopPropagation(); selectProject('${projName}'); openEditorForNewSop();" class="p-1.5 hover:bg-blue-100 rounded-lg text-[#000080]"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                            <button onclick="event.stopPropagation(); deleteWholeProject('${projName}')" class="p-1.5 hover:bg-red-100 rounded-lg text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            <button onclick="event.stopPropagation(); printAllProjectQrs('${projId}')" class="p-1.5 hover:bg-blue-100 rounded-lg text-blue-600"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                            <button onclick="event.stopPropagation(); downloadAllProjectQrs('${projId}')" class="p-1.5 hover:bg-orange-100 rounded-lg text-orange-600"><i data-lucide="folder-down" class="w-4 h-4"></i></button>
+                            ${editAuthHtml}
+                            <button onclick="event.stopPropagation(); selectProject('${projId}'); openEditorForNewSop();" class="p-1.5 hover:bg-blue-100 rounded-lg text-[#000080]"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                            <button onclick="event.stopPropagation(); deleteWholeProject('${projId}')" class="p-1.5 hover:bg-red-100 rounded-lg text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             <i data-lucide="chevron-down" class="chevron w-4 h-4 ml-1"></i>
                         </div>`;
                     const content = document.createElement('div');
-                    content.className = `folder-content ${activeProject === projName ? '' : 'hidden'}`;
-                    header.onclick = function() { selectProject(projName); content.classList.toggle('hidden'); };
-                    const { data: files } = await supabaseClient.storage.from(BUCKET_NAME).list(`public/data/${projName}`);
+                    content.className = `folder-content ${activeProject === projId ? '' : 'hidden'}`;
+                    header.onclick = function() { selectProject(projId); content.classList.toggle('hidden'); };
+                    const { data: files } = await supabaseClient.storage.from(BUCKET_NAME).list(`public/data/${projId}`);
                     const jsonFiles = (files || []).filter(f => f.name.endsWith('.json'));
                     for (const f of jsonFiles) {
-                        const path = `public/data/${projName}/${f.name}`;
+                        const path = `public/data/${projId}/${f.name}`;
                         const div = document.createElement('div');
                         div.className = "p-3 hover:bg-slate-100 rounded-xl cursor-pointer text-[11px] font-bold flex items-center justify-between ml-3 mt-2 border border-transparent";
                         div.innerHTML = `<span class="truncate flex-grow mr-2 uppercase tracking-tight name-label">Yükleniyor...</span><div class="flex gap-2 items-center"><button class="text-[#000080] p-1.5 hover:bg-blue-50 rounded-lg"><i data-lucide="qr-code" class="w-4 h-4"></i></button><button class="text-slate-600 p-1.5 hover:bg-slate-200 rounded-lg"><i data-lucide="eye" class="w-4 h-4"></i></button><button class="text-red-500 p-1.5 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
@@ -1012,8 +1183,17 @@
             try {
                 const cleanPath = path.replace(/^\/+/, ''); const { data } = await supabaseClient.storage.from(BUCKET_NAME).download(cleanPath);
                 opCurrentSop = JSON.parse(await data.text()); opActiveIdx = 0;
-                get('opSopTitle').innerText = opCurrentSop.title; get('opSopSubtitle').innerText = opCurrentSop.subtitle;
-                if(opCurrentSop.logo) get('opLogoContainer').innerHTML = `<img src="${opCurrentSop.logo}" class="w-full h-full object-contain">`;
+                
+                const projConf = dynamicAuth[opCurrentSop.subtitle.toUpperCase()];
+                const finalProjectName = projConf?.name || opCurrentSop.subtitle;
+                const finalLogo = projConf?.logo || opCurrentSop.logo;
+
+                get('opSopTitle').innerText = opCurrentSop.title; 
+                get('opSopSubtitle').innerText = finalProjectName; // Güncel proje ismini göster
+                
+                if(finalLogo) get('opLogoContainer').innerHTML = `<img src="${finalLogo}" class="w-full h-full object-contain">`;
+                else get('opLogoContainer').innerHTML = "";
+                
                 const warnArea = get('opWarningsArea');
                 if (opCurrentSop.warnings && opCurrentSop.warnings.length > 0) {
                     warnArea.innerHTML = opCurrentSop.warnings.map(w => `<div class="mb-2 text-red-700 font-bold flex gap-2 items-center"><i data-lucide="alert-octagon" class="w-4 h-4"></i> ${w.text}</div>`).join('');
@@ -1077,9 +1257,18 @@
                 const s = JSON.parse(await data.text());
                 resetApp(); currentSopPath = cleanPath; 
                 points = s.points; arrows = s.arrows; warnings = s.warnings;
-                get('sopTitleInput').value = s.title; get('sopSubtitleInput').value = s.subtitle;
+                
+                const projConf = dynamicAuth[s.subtitle.toUpperCase()];
+                const finalProjectName = projConf?.name || s.subtitle;
+                const finalLogo = projConf?.logo || s.logo;
+
+                get('sopTitleInput').value = s.title; 
+                get('sopSubtitleInput').value = finalProjectName; // Güncel ismi yükle
                 selectProject(s.subtitle);
-                if(s.logo) { get('logoPreview').src = s.logo; get('logoPreview').classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }
+                
+                if(finalLogo) { get('logoPreview').src = finalLogo; get('logoPreview').classList.remove('hidden'); get('logoPlaceholder').classList.add('hidden'); }
+                else { get('logoPreview').src = ""; get('logoPreview').classList.add('hidden'); get('logoPlaceholder').classList.remove('hidden'); }
+
                 const sImages = s.images || [null]; images = [];
                 for(let i=0; i<sImages.length; i++) {
                     if(sImages[i]) {
@@ -1092,7 +1281,14 @@
             } catch(e) { showMessage("Hata", "İşlem başarısız."); } finally { toggleLoading(false); }
         }
 
-        function selectProject(projId) { activeProject = projId; get('activeProjectTitle').innerText = projId; get('startNewSopBtn').classList.remove('hidden'); get('projectEmptyState').classList.remove('hidden'); get('sopEditor').classList.add('hidden'); }
+        function selectProject(projId) { 
+            activeProject = projId; 
+            const projConf = dynamicAuth[projId.toUpperCase()];
+            get('activeProjectTitle').innerText = projConf?.name || projId; 
+            get('startNewSopBtn').classList.remove('hidden'); 
+            get('projectEmptyState').classList.remove('hidden'); 
+            get('sopEditor').classList.add('hidden'); 
+        }
         
         function openEditorForNewSop() { 
             if (newSopDraft) {
@@ -1100,7 +1296,17 @@
                 return;
             }
             resetApp(); currentSopPath = null;
-            get('sopSubtitleInput').value = activeProject; get('projectEmptyState').classList.add('hidden'); get('sopEditor').classList.remove('hidden'); 
+            
+            const projAuth = dynamicAuth[activeProject.toUpperCase()];
+            get('sopSubtitleInput').value = projAuth?.name || activeProject;
+            
+            if (projAuth && projAuth.logo) {
+                get('logoPreview').src = projAuth.logo;
+                get('logoPreview').classList.remove('hidden');
+                get('logoPlaceholder').classList.add('hidden');
+            }
+
+            get('projectEmptyState').classList.add('hidden'); get('sopEditor').classList.remove('hidden'); 
         }
 
         function closeEditor() { 
