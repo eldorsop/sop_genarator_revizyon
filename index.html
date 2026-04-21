@@ -575,7 +575,7 @@
         let loginPurpose = 'system'; 
         let currentSopPath = null; 
         
-        // DRAFT MANAGEMENT
+        // Taslak Yönetimi
         let newSopDraft = null;
 
         let opCurrentSop = null;
@@ -666,14 +666,47 @@
 
         function createQrCanvasWithTitle(sourceCanvas, title) {
             const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d');
-            const padding = 40; const textHeight = 60; const qrSize = sourceCanvas.width;
-            tempCanvas.width = qrSize + (padding * 2); tempCanvas.height = qrSize + textHeight + (padding * 2);
-            tempCtx.fillStyle = '#ffffff'; tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-            tempCtx.fillStyle = '#000080'; tempCtx.font = 'bold 24px Inter, sans-serif'; tempCtx.textAlign = 'center'; tempCtx.textBaseline = 'middle';
-            const displayTitle = title.length > 25 ? title.substring(0, 22) + '...' : title;
-            tempCtx.fillText(displayTitle.toUpperCase(), tempCanvas.width / 2, padding + (textHeight / 2));
-            tempCtx.drawImage(sourceCanvas, padding, padding + textHeight);
-            tempCtx.fillStyle = '#94a3b8'; tempCtx.font = '900 10px Inter, sans-serif'; tempCtx.fillText('ELDOR SOP SYSTEM - ACCESS QR', tempCanvas.width / 2, tempCanvas.height - 20);
+            
+            // Çerçeve oranı 90mm (G) x 80mm (Y)
+            const qrSize = sourceCanvas.width; // 220px
+            const totalWidth = 360; 
+            const totalHeight = Math.floor(totalWidth * (80/90)); // 320px
+            
+            tempCanvas.width = totalWidth; 
+            tempCanvas.height = totalHeight;
+            
+            tempCtx.fillStyle = '#ffffff'; 
+            tempCtx.fillRect(0, 0, totalWidth, totalHeight);
+            
+            const titleFontSize = 26;
+            const footerFontSize = 10;
+            const spacing = 15;
+            
+            // Tüm içeriğin toplam yüksekliğini hesapla (Başlık + Boşluk + QR + Boşluk + Alt Metin)
+            const contentHeight = titleFontSize + spacing + qrSize + spacing + footerFontSize;
+            
+            // İçeriği Canvas'ın dikey ortasına yerleştirmek için başlangıç noktasını bul
+            const startY = (totalHeight - contentHeight) / 2;
+
+            // 1. Başlık
+            tempCtx.fillStyle = '#000080'; 
+            tempCtx.font = `bold ${titleFontSize}px Inter, sans-serif`; 
+            tempCtx.textAlign = 'center'; 
+            tempCtx.textBaseline = 'top';
+            const displayTitle = title.length > 22 ? title.substring(0, 19) + '...' : title;
+            tempCtx.fillText(displayTitle.toUpperCase(), totalWidth / 2, startY);
+            
+            // 2. QR Kod
+            const qrStartX = (totalWidth - qrSize) / 2;
+            tempCtx.drawImage(sourceCanvas, qrStartX, startY + titleFontSize + spacing);
+            
+            // 3. Alt Bilgi
+            tempCtx.fillStyle = '#94a3b8'; 
+            tempCtx.font = `900 ${footerFontSize}px Inter, sans-serif`; 
+            tempCtx.textAlign = 'center';
+            tempCtx.textBaseline = 'top';
+            tempCtx.fillText('ELDOR SOP SYSTEM - ACCESS QR', totalWidth / 2, startY + titleFontSize + spacing + qrSize + spacing);
+            
             return tempCanvas;
         }
 
@@ -717,8 +750,9 @@
             toggleLoading(true, `Yazdırma hazırlanıyor: ${projName}...`);
             try {
                 const { data: files } = await supabaseClient.storage.from(BUCKET_NAME).list(`public/data/${projName}`);
-                const jsonFiles = (files || []).filter(function(f) { return f.name.endsWith('.json'); });
-                if (jsonFiles.length === 0) { showMessage("Hata", "Bu projede yazdırılacak döküman bulunamadı."); return; }
+                const jsonFiles = (files || []).filter(f => f.name.endsWith('.json'));
+                if (jsonFiles.length === 0) { showMessage("Hata", "Döküman bulunamadı."); return; }
+                
                 const items = []; const hiddenContainer = get('hiddenQrContainer');
                 for (let i = 0; i < jsonFiles.length; i++) {
                     const f = jsonFiles[i]; const path = `public/data/${projName}/${f.name}`;
@@ -731,23 +765,71 @@
                     const sourceCanvas = hiddenContainer.querySelector('canvas');
                     if (sourceCanvas) {
                         const finalCanvas = createQrCanvasWithTitle(sourceCanvas, sopTitle);
-                        items.push({ img: finalCanvas.toDataURL('image/png'), title: sopTitle });
+                        items.push({ img: finalCanvas.toDataURL('image/png') });
                     }
-                    toggleLoading(true, `QR Üretiliyor: ${i+1}/${jsonFiles.length}`);
                 }
-                let printHtml = `<html><head><title>QR Yazdır - ${projName}</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@700;900&display=swap');body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #fff; }.page { width: 210mm; height: 297mm; padding: 10mm; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 10mm; page-break-after: always; box-sizing: border-box; }.qr-card { border: 1px solid #eee; border-radius: 12px; display: flex; justify-content: center; align-items: center; flex-direction: column; padding: 5mm; }.qr-card img { max-width: 90%; height: auto; }@media print { body { background: none; } .page { margin: 0; border: none; } }</style></head><body>`;
-                for (let i = 0; i < items.length; i += 4) {
+                
+                // 2x2 IZGARA DÜZENİ (SAYFA BAŞINA 4 ADET)
+                let printHtml = `<html><head><title>QR Yazdır</title><style>
+                body { margin: 0; padding: 0; background: #fff; }
+                .page { 
+                    width: 210mm; height: 297mm; padding: 10mm; 
+                    display: grid; grid-template-columns: 95mm 95mm; grid-template-rows: 135mm 135mm; 
+                    gap: 5mm; page-break-after: always; box-sizing: border-box; 
+                    justify-content: center; align-content: center;
+                }
+                .qr-card { 
+                    width: 90mm; height: 80mm; 
+                    border: 0.5mm solid #000000 !important; 
+                    display: flex; justify-content: center; align-items: center; 
+                    background: #ffffff; overflow: hidden; box-sizing: border-box;
+                    margin: auto;
+                }
+                .qr-card img { max-width: 99%; max-height: 99%; display: block; object-fit: contain; }
+                @media print { 
+                    body { background: none; -webkit-print-color-adjust: exact; } 
+                    .page { margin: 0; border: none; } 
+                }
+                </style></head><body>`;
+                
+                for (let i = 0; i < items.length; i += 4) { 
                     printHtml += `<div class="page">`;
-                    for (let j = i; j < i + 4 && j < items.length; j++) { printHtml += `<div class="qr-card"><img src="${items[j].img}"></div>`; }
+                    for (let j = i; j < i + 4 && j < items.length; j++) { 
+                        printHtml += `<div class="qr-card"><img src="${items[j].img}"></div>`; 
+                    }
                     printHtml += `</div>`;
                 }
                 printHtml += `</body></html>`;
-                const printWindow = window.open('', '_blank'); printWindow.document.write(printHtml); printWindow.document.close();
-                setTimeout(function() { printWindow.print(); }, 800);
-            } catch (err) { console.error(err); showMessage("Hata", "Yazdırma işlemi başarısız."); } finally { toggleLoading(false); get('hiddenQrContainer').innerHTML = ''; }
+                
+                const printWin = window.open('', '_blank');
+                if (printWin) {
+                    printWin.document.write(printHtml);
+                    printWin.document.close();
+                    
+                    const checkLoaded = setInterval(() => {
+                        if (printWin.document.readyState === 'complete') {
+                            clearInterval(checkLoaded);
+                            printWin.focus();
+                            setTimeout(() => { printWin.print(); }, 500);
+                        }
+                    }, 500);
+                } else {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.position = 'fixed'; iframe.style.right = '0'; iframe.style.bottom = '0';
+                    iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = '0';
+                    document.body.appendChild(iframe);
+                    const doc = iframe.contentWindow.document;
+                    doc.open(); doc.write(printHtml); doc.close();
+                    setTimeout(() => {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                        setTimeout(() => document.body.removeChild(iframe), 2000);
+                    }, 2000);
+                }
+            } catch (err) { console.error(err); showMessage("Hata", "Yazdırma başarısız."); } finally { toggleLoading(false); get('hiddenQrContainer').innerHTML = ''; }
         }
 
-        // --- DRAFT LOGIC ---
+        // --- TASLAK MANTIĞI ---
         function saveCurrentToDraft() {
             if (currentSopPath === null && (points.length > 0 || get('sopTitleInput').value.trim() !== '')) {
                 newSopDraft = {
@@ -848,7 +930,7 @@
             images.forEach(function(img, i) {
                 const btn = document.createElement('button');
                 btn.className = `tab-btn relative px-4 py-3 text-xs font-black uppercase tracking-widest whitespace-nowrap shrink-0 ${activeIdx === i ? 'active' : ''}`;
-                btn.innerHTML = `<span>Görsel ${i + 1}</span><span class="ml-2 p-1 hover:bg-red-500 hover:text-white rounded-full transition-colors text-[10px] leading-none" onclick="event.stopPropagation(); removeTab(${i})">✕</span>`;
+                btn.innerHTML = `<span>Görsel ${i + 1}</span><span class="ml-2 p-1 hover:bg-red-50 hover:text-white rounded-full transition-colors text-[10px] leading-none" onclick="event.stopPropagation(); removeTab(${i})">✕</span>`;
                 btn.onclick = function() { activeIdx = i; renderAll(); };
                 container.appendChild(btn);
             });
